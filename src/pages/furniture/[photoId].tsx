@@ -7,7 +7,7 @@ import cloudinary from '../../utils/cloudinary'
 import getBase64ImageUrl from '../../utils/generateBlurPlaceholder'
 import type { ImageProps } from '../../utils/types'
 
-const Home: NextPage = ({ currentPhoto }: { currentPhoto: ImageProps }) => {
+const Home: NextPage<{ currentPhoto: ImageProps }> = ({ currentPhoto }) => {
   const router = useRouter()
   const { photoId } = router.query
   let index = Number(photoId)
@@ -46,15 +46,26 @@ export const getStaticProps: GetStaticProps = async (context) => {
     i++
   }
 
+  if (context.params) {
   const currentPhoto = reducedResults.find(
-    (img) => img.id === Number(context.params.photoId)
+    (img) => img.id === Number(context.params?.photoId)
   )
-  currentPhoto.blurDataUrl = await getBase64ImageUrl(currentPhoto)
+  if (currentPhoto){
+    currentPhoto.blurDataUrl = await getBase64ImageUrl(currentPhoto)
+  }
 
   return {
     props: {
       currentPhoto: currentPhoto,
     },
+  }
+  }else {
+    return {
+      props: {
+        currentPhoto: null
+      },
+    }
+  
   }
 }
 

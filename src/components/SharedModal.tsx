@@ -33,8 +33,10 @@ import {
   
     const handlers = useSwipeable({
       onSwipedLeft: () => {
-        if (index < images?.length - 1) {
-          changePhotoId(index + 1)
+        if (images) {
+          if (index < images?.length - 1) {
+            changePhotoId(index + 1)
+          }
         }
       },
       onSwipedRight: () => {
@@ -75,8 +77,8 @@ import {
                     src={`https://res.cloudinary.com/${
                       process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
                     }/image/upload/c_scale,${navigation ? 'w_1280' : 'w_1920'}/${
-                      currentImage.public_id
-                    }.${currentImage.format}`}
+                      currentImage?.public_id
+                    }.${currentImage?.format}`}
                     width={navigation ? 1280 : 1920}
                     height={navigation ? 853 : 1280}
                     priority
@@ -91,7 +93,7 @@ import {
           {/* Buttons + bottom nav bar */}
           <div className="absolute inset-0 mx-auto flex max-w-7xl items-center justify-center">
             {/* Buttons */}
-            {loaded && (
+            {loaded && images && (
               <div className="relative aspect-[3/2] max-h-full w-full">
                 {navigation && (
                   <>
@@ -116,7 +118,7 @@ import {
                   </>
                 )}
                 <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
-                  {navigation ? (
+                  {navigation && currentImage ? (
                     <a
                       href={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${currentImage.public_id}.${currentImage.format}`}
                       className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
@@ -140,7 +142,7 @@ import {
                   <button
                     onClick={() =>
                       downloadPhoto(
-                        `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${currentImage.public_id}.${currentImage.format}`,
+                        `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${currentImage?.public_id}.${currentImage?.format}`,
                         `${index}.jpg`
                       )
                     }
@@ -165,14 +167,14 @@ import {
               </div>
             )}
             {/* Bottom Nav bar */}
-            {navigation && (
+            {navigation && images && (
               <div className="fixed inset-x-0 bottom-0 z-40 overflow-hidden bg-gradient-to-b from-black/0 to-black/60">
                 <motion.div
                   initial={false}
                   className="mx-auto mt-6 mb-6 flex aspect-[3/2] h-14"
                 >
                   <AnimatePresence initial={false}>
-                    {filteredImages.map(({ public_id, format, id }) => (
+                    {filteredImages?.map(({ public_id, format, id }) => (
                       <motion.button
                         initial={{
                           width: '0%',

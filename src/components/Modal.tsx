@@ -14,7 +14,8 @@ export default function Modal({
   images: ImageProps[]
   onClose?: () => void
 }) {
-  let overlayRef = useRef()
+  let overlayRef = useRef<HTMLDivElement | null>(null);
+  
   const router = useRouter()
 
   const { photoId } = router.query
@@ -49,7 +50,9 @@ export default function Modal({
 
 
   return (
-    <Dialog
+    <>
+    ({overlayRef && 
+      <Dialog
       static
       open={true}
       onClose={handleClose}
@@ -72,6 +75,8 @@ export default function Modal({
         closeModal={handleClose}
         navigation={true}
       />
-    </Dialog>
+    </Dialog> 
+      })
+    </>
   )
 }

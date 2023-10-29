@@ -25,6 +25,8 @@
     "react-swipeable": "^7.0.0"
   },
   "devDependencies": {
+    "@types/imagemin": "^8.0.3",
+    "@types/imagemin-jpegtran": "^5.0.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

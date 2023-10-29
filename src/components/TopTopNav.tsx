@@ -7,7 +7,7 @@ import Link from "next/link";
 import * as Ariakit from "@ariakit/react";
 import Bars from "./Icons/Bars";
 
-const TopTopNav: React.FC<TopTopNavProps> = () => {
+const TopTopNav: React.FC = () => {
   return (
     <>
       <nav className="bg-slate-950 h-[50px] leading-none text-white">

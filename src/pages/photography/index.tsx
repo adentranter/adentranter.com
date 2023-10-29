@@ -9,21 +9,26 @@ import Modal from '../../components/Modal'
 import cloudinary from '../../utils/cloudinary'
 import getBase64ImageUrl from '../../utils/generateBlurPlaceholder'
 import type { ImageProps } from '../../utils/types'
-import { useLastViewedPhoto } from '../../utils/useLastViewedPhoto'
-import TopTopNav from '@/components/TopTopNav'
 
-const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
+
+import TopTopNav from '@/components/TopTopNav'
+import { createGlobalState } from 'react-hooks-global-state'
+
+const { useGlobalState } = createGlobalState({ photoToScrollTo: 0 });
+
+
+const Home: NextPage<{ images: ImageProps[] }> = ({ images }) => {
   const router = useRouter()
   const { photoId } = router.query
-  const [lastViewedPhoto, setLastViewedPhoto] = useLastViewedPhoto()
+  const [lastViewedPhoto, setLastViewedPhoto] = useGlobalState("photoToScrollTo");
 
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
     // This effect keeps track of the last viewed photo in the modal to keep the index page in sync when the user navigates back
     if (lastViewedPhoto && !photoId) {
-      lastViewedPhotoRef.current.scrollIntoView({ block: 'center' })
-      setLastViewedPhoto(null)
+      lastViewedPhotoRef?.current?.scrollIntoView({ block: 'center' })
+      setLastViewedPhoto(0)
     }
   }, [photoId, lastViewedPhoto, setLastViewedPhoto])
 
@@ -50,7 +55,7 @@ const Home: NextPage = ({ images }: { images: ImageProps[] }) => {
             prefix="photography"
             images={images}
             onClose={() => {
-              setLastViewedPhoto(photoId)
+              setLastViewedPhoto(Number(photoId))
             }}
           />
         )}
