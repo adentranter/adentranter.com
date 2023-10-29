@@ -1,9 +1,10 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import useKeypress from 'react-use-keypress'
 import type { ImageProps } from '../utils/types'
-import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 import SharedModal from './SharedModal'
+import { createGlobalState } from 'react-hooks-global-state'
+
+const { useGlobalState } = createGlobalState({ photoToScrollTo: 0 });
 
 export default function Carousel({
   index,
@@ -15,10 +16,11 @@ export default function Carousel({
   prefix: string
 }) {
   const router = useRouter()
-  const [, setLastViewedPhoto] = useLastViewedPhoto()
+  const [currentPhotoId, setcurrentPhotoId] = useGlobalState('photoToScrollTo');
+
 
   function closeModal() {
-    setLastViewedPhoto(currentPhoto.id)
+    setcurrentPhotoId(currentPhoto.id);
     router.push('/'+prefix, undefined, { shallow: true });
   }
 
@@ -26,9 +28,6 @@ export default function Carousel({
     return newVal
   }
 
-  useKeypress('Escape', () => {
-    closeModal()
-  })
 
   return (
     <div className="fixed inset-0 flex items-center justify-center">
@@ -36,13 +35,16 @@ export default function Carousel({
         className="absolute inset-0 z-30 cursor-default bg-black backdrop-blur-2xl"
         onClick={closeModal}
       >
-        <Image
-          src={currentPhoto.blurDataUrl}
-          className="pointer-events-none h-full w-full"
-          alt="blurred background"
-          fill
-          priority={true}
-        />
+        ({currentPhoto.blurDataUrl &&
+         <Image
+         src={currentPhoto.blurDataUrl}
+         className="pointer-events-none h-full w-full"
+         alt="blurred background"
+         fill
+         priority={true}
+       />  
+        })
+       
       </button>
       <SharedModal
         index={index}

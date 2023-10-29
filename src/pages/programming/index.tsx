@@ -19,7 +19,7 @@ export default function Home() {
               React, and Vue.js.
             </p>
           </div>
-        </section>
+        </section>  
 
         <section className=" py-16">
           <h3>More to Come</h3>
