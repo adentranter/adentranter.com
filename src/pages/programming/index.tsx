@@ -139,7 +139,7 @@ export default function Home() {
         {/* Applications List */}
         <section className=" mx-auto py-16 flex">
           <div className="w-3/4 mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Here are some of the software I've worked on</h2>
+            <h2 className="text-2xl font-bold mb-4">Here are some of the software Ive worked on</h2>
             <hr className="mt-5 mb-5"></hr>
 
           {applications.map((app) => (
