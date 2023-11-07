@@ -16,7 +16,7 @@ export default function Home() {
       <div>
         <TopTopNav />
 
-        <section className="text-white py-16">
+        <section className=" py-16">
           <div className="mx-auto w-3/4">
   <h1 className="text-3xl font-bold">Aden Tranter</h1>
             <p className="mt-4 text-1xl">
