@@ -8,6 +8,14 @@ export default function SharedModal() {
 // ... rest of your component code
 const applications = [
   {
+    id: 0,
+    name: "pricetriggers.com",
+    imageUrl: "/applications/pricetriggers.png",
+    description: "Self hosted Next.js project I started on the 8th of Nov 2023. I'm planning some cool as features but right now just getting it to do one thing well",
+    techStack: ["Node.js", "TypeScript", "Next.js/React"],
+    siteUrl: "https://pricetriggers.com",
+  },
+  {
     id: 1,
     name: "AdenTranter.com",
     imageUrl: "/applications/personalsite.png",
