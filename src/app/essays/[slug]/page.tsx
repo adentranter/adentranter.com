@@ -8,7 +8,7 @@ async function getEssay(slug: string) {
     const filePath = path.join(essaysDirectory, `${slug}.json`)
     const content = await fs.readFile(filePath, 'utf8')
     return JSON.parse(content)
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }
@@ -39,7 +39,7 @@ export default async function EssayPage({
         </time>
       </header>
       <div className="prose prose-lg">
-        {essay.content.split('\n\n').map((paragraph, index) => (
+        {essay.content.split('\n\n').map((paragraph: string, index: number) => (
           <p key={index} className="mb-4">
             {paragraph}
           </p>
