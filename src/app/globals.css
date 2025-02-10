@@ -2,20 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    --background: 210 17% 98%;
+    --background-dark: 220 11% 18%;
+    
+    --primary: 196 100% 63%;
+    --accent-green: 142 42% 25%;
+    --accent-pink: 352 54% 75%;
+    --accent-gray: 196 16% 29%;
+  }
+
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+
+  body {
+    font-family: "Proxima Nova", sans-serif;
+    font-weight: 300;
   }
 }
 
+/* Font Face Declarations */
+@font-face {
+  font-family: "SharpSansBold";
+  src: url("/fonts/SharpSansBold.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SharpSans";
+  src: url("/fonts/SharpSansSemibold.otf") format("opentype");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("/fonts/ProximaMed.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Typography Classes */
+.bold-text {
+  font-family: "Proxima Nova";
+  font-weight: bold;
+}
+
+.medium-text {
+  font-family: "Proxima Nova";
+  font-weight: 500;
+}
+
+.light-text {
+  font-family: "Proxima Nova";
+  font-weight: 300;
+}
+
+.logo-font {
+  font-family: "SharpSansBold";
+}
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply transition-colors duration-200;
 }

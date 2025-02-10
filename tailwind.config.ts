@@ -1,18 +1,53 @@
 import type { Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
 
-export default {
+const config = {
+  darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
+  prefix: "",
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
+  		fontFamily: {
+  			sans: [
+  				'Proxima Nova',
+                    ...fontFamily.sans
+                ],
+  			heading: [
+  				'SharpSansBold',
+                    ...fontFamily.sans
+                ],
+  			sharp: [
+  				'SharpSans',
+  				'sans-serif'
+  			]
+  		},
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: {
+          DEFAULT: "#f8f9fa",
+          dark: "#1a1a1a",
+        },
+        primary: "#42CAFF",
+        accent: {
+          DEFAULT: "#1e61b0",//real navy
+          secondary: "#1658bf",//real pink
+          muted: "#3C5256",
+          success: "#255F37",
+        },
       },
     },
   },
-  plugins: [],
 } satisfies Config;
+
+export default config;
