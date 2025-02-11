@@ -29,34 +29,11 @@ export default function AboutPage() {
         </p>
 
         <div>
-          <h2 className="text-2xl font-semibold">Things I've Built</h2>
+          <h2 className="text-2xl font-semibold">On Building</h2>
           <p>
-            I've always been drawn to solving weird, specific problems. Started with building a proxy 
-            manager for JUVY that let teachers whitelist websites for classrooms - turns out giving 
-            internet access to kids in detention is as complex as it sounds.
+          I love building things. Started with physical projects - crafting sailboats from wood, experimenting with hovercrafts, and launching bottle rockets in the backyard. Naturally drifted into electronics, tinkering with circuits and components. These days I mostly build software and web applications, but that fundamental joy of creating something from scratch has never changed.
           </p>
-          <p>
-            Built systems for industries I knew nothing about: photo management for studios, 
-            maintenance tracking for Blackhawk helicopters, quoting tools for cabinet makers. 
-            Each one taught me that the technical problem is usually the easy part - it's 
-            understanding how people actually work that's tricky.
-          </p>
-          <p>
-            Got deep into real estate tech for a while: CRM platforms, rental inspection apps, 
-            due diligence reports. Learned that every industry thinks they're special, but they 
-            all need the same thing - software that doesn't get in their way.
-          </p>
-          <p>
-            Some favorites: An OCR system that saved an eye doctor 20k yearly by intercepting 
-            PDFs (sometimes the elegant solution is just being clever), a mining information 
-            platform that probably had more acronyms than code, and a price tracker that 
-            taught me more about web scraping than I ever wanted to know.
-          </p>
-          <p>
-            These days I'm working on voxit.com.au, trying to make transcription and proofreading 
-            less painful. Like most things I build, it started with "surely there's a better way 
-            to do this."
-          </p>
+        
         </div>
 
         <div>

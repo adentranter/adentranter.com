@@ -38,12 +38,12 @@ const config = {
           DEFAULT: "#f8f9fa",
           dark: "#1a1a1a",
         },
-        primary: "#42CAFF",
+        primary: "white",
         accent: {
-          DEFAULT: "#1e61b0",//real navy
-          secondary: "#1658bf",//real pink
-          muted: "#3C5256",
-          success: "#255F37",
+          DEFAULT: "cream",//real navy
+          secondary: "silver",//real pink
+          muted: "gray",
+          success: "green",
         },
       },
     },

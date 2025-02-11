@@ -1,24 +1,12 @@
-import { promises as fs } from 'fs'
-import path from 'path'
 import { notFound } from 'next/navigation'
-
-async function getEssay(slug: string) {
-  try {
-    const essaysDirectory = path.join(process.cwd(), 'src/app/essays/essay-files')
-    const filePath = path.join(essaysDirectory, `${slug}.json`)
-    const content = await fs.readFile(filePath, 'utf8')
-    return JSON.parse(content)
-  } catch (_error) {
-    return null
-  }
-}
+import { essays } from '../data'
 
 export default async function EssayPage({
   params
 }: {
-  params: { slug: string }
+  params: { slug: keyof typeof essays }
 }) {
-  const essay = await getEssay(params.slug)
+  const essay = essays[params.slug]
 
   if (!essay) {
     notFound()

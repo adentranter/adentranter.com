@@ -24,12 +24,14 @@ type Stats = {
   }
   currentlyPlaying: {
     item: {
+      id: string
       name: string
       artists: Array<{ name: string }>
     }
   } | null
   recentlyPlayed: Array<{
     track: {
+      id: string
       name: string
       artists: Array<{ name: string }>
     }
@@ -73,102 +75,118 @@ export function CodingStats() {
   if (!stats) return null
 
   return (
-    <div className="grid grid-cols-2 gap-8">
-      {/* Left side - Time Stats */}
-      <div>
-        <div className="flex items-center gap-3 mb-6">
-          <ChartIcon className="w-6 h-6" />
-          <h3 className="text-2xl font-bold">Daily Activity</h3>
-        </div>
-
-        <div className="space-y-6">
-          {/* Today's Stats */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <div className="text-3xl font-mono text-primary">
-                {stats.today.totalHours.toFixed(1)}h
-              </div>
-              <div className="text-sm text-white/60">Total Time</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl font-mono text-primary">
-                {stats.today.allProductiveHours.toFixed(1)}h
-              </div>
-              <div className="text-sm text-white/60">Productive Time</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl font-mono text-primary">
-                {stats.today.distractingHours.toFixed(1)}h
-              </div>
-              <div className="text-sm text-white/60">Distracted Time</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl font-mono text-primary">
-                {stats.today.productivityPulse}%
-              </div>
-              <div className="text-sm text-white/60">Productivity</div>
-            </div>
+    <>
+    <div className="flex flex-col space-y-8">
+      {/* First row - Time Stats and Music now use responsive grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left side - Time Stats - full width on mobile */}
+        <div className="lg:col-span-5">
+          <div className="flex items-center gap-3 mb-6">
+            <ChartIcon className="w-6 h-6" />
+            <h3 className="text-2xl font-bold">Daily Activity</h3>
           </div>
 
-          {/* Weekly Stats */}
-          <div className="space-y-4 pt-4 border-t border-white/10">
-            <div className="space-y-1">
-              <div className="text-2xl font-mono text-primary">
-                {stats.week.totalHours.toFixed(0)}h
-              </div>
-              <div className="text-sm text-white/60">This Week</div>
-            </div>
-            
-            {/* Top Category */}
-            {stats.today.topCategories.length > 0 && (
+          <div className="space-y-6">
+            {/* Today's Stats - 2 columns grid maintained */}
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1">
-                <div className="text-lg font-mono text-primary">
-                  {stats.today.topCategories[0].name}
-                  <span className="text-white/60 text-sm ml-2">
-                    ({stats.today.topCategories[0].hours.toFixed(1)}h)
-                  </span>
+                <div className="text-3xl font-mono text-primary">
+                  {stats.today.totalHours.toFixed(1)}h
                 </div>
-                <div className="text-sm text-white/60">Most Used Category</div>
+                <div className="text-sm text-white/60">Total Time</div>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Music */}
-      <div>
-        <div className="flex items-center gap-3 mb-6">
-          <SpotifyIcon className="w-6 h-6" />
-          <h3 className="text-2xl font-bold">Music Activity</h3>
-        </div>
-
-        <div className="space-y-4">
-          {/* Currently Playing */}
-          {stats.currentlyPlaying && (
-            <div className="pb-4 mb-4 border-b border-white/10">
-              <div className="text-sm">
-                <div className="text-white/60 mb-1">Now Playing:</div>
-                <div className="text-primary text-lg">
-                  {stats.currentlyPlaying.item.name}
-                  <span className="text-white/80 ml-1">
-                    - {stats.currentlyPlaying.item.artists[0].name}
-                  </span>
+              <div className="space-y-1">
+                <div className="text-3xl font-mono text-primary">
+                  {stats.today.allProductiveHours.toFixed(1)}h
                 </div>
+                <div className="text-sm text-white/60">Productive Time</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-3xl font-mono text-primary">
+                  {stats.today.distractingHours.toFixed(1)}h
+                </div>
+                <div className="text-sm text-white/60">Distracted Time</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-3xl font-mono text-primary">
+                  {stats.today.productivityPulse}%
+                </div>
+                <div className="text-sm text-white/60">Productivity</div>
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* Recently Played */}
-          <div className="space-y-2.5">
-            {stats.recentlyPlayed.slice(0, 5).map((item, i) => (
-              <div key={i} className="text-sm">
-                <span className="text-white">{item.track.name}</span>
-                <span className="text-white/60"> - {item.track.artists[0].name}</span>
+        {/* Right side - Music - full width on mobile */}
+        <div className="lg:col-span-7">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <SpotifyIcon className="w-6 h-6" />
+              <h3 className="text-2xl font-bold">Music Activity</h3>
+            </div>
+
+            <div className="space-y-4">
+              {/* Recently Played - adjusted max-width for mobile */}
+              <div className="space-y-2">
+                {stats.recentlyPlayed.slice(0, 8).map((item, i) => (
+                  <div key={i} className="text-sm">
+                    <a 
+                      href={`https://open.spotify.com/track/${item.track.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center"
+                    >
+                      <span 
+                        className="text-white group-hover:underline truncate inline-block max-w-[180px] sm:max-w-[200px]" 
+                        title={item.track.name}
+                      >
+                        {item.track.name.length > 30 ? item.track.name.slice(0, 30) + '...' : item.track.name}
+                      </span>
+                      <span 
+                        className="text-white/60 truncate inline-block max-w-[120px] sm:max-w-[150px]" 
+                        title={item.track.artists[0].name}
+                      >
+                        {' '}- {item.track.artists[0].name.length > 20 
+                            ? item.track.artists[0].name.slice(0, 20) + '...' 
+                            : item.track.artists[0].name}
+                      </span>
+                    </a>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>      
           </div>
         </div>
       </div>
+
+      {/* Second row - Currently Playing */}
+      {stats.currentlyPlaying && stats.currentlyPlaying.item && (
+        <div className="w-full border-t border-white/10 pt-4">
+          <div className="text-sm">
+            <div className="text-white/60 mb-1">Now Playing:</div>
+            <a 
+              href={`https://open.spotify.com/track/${stats.currentlyPlaying.item.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group"
+            >
+              <div className="text-primary text-lg truncate flex flex-col sm:flex-row sm:items-center">
+                <span className="group-hover:underline truncate" title={stats.currentlyPlaying.item.name}>
+                  {stats.currentlyPlaying.item.name.length > 40 
+                    ? stats.currentlyPlaying.item.name.slice(0, 40) + '...' 
+                    : stats.currentlyPlaying.item.name}
+                </span>
+                <span className="text-white/80 truncate" title={stats.currentlyPlaying.item.artists[0].name}>
+                  - {stats.currentlyPlaying.item.artists[0].name.length > 40 
+                      ? stats.currentlyPlaying.item.artists[0].name.slice(0, 40) + '...' 
+                      : stats.currentlyPlaying.item.artists[0].name}
+                </span>
+              </div>
+            </a>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   )
 } 

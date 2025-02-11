@@ -145,21 +145,47 @@ const RecentlyPlayedSchema = z.object({
 
 // API Methods
 export async function getCurrentlyPlaying() {
-  const client = SpotifyAPIClient.getInstance()
-  const data = await client.fetchSpotifyApi('/me/player/currently-playing')
-  return CurrentlyPlayingSchema.parse(data)
+  try {
+    const client = SpotifyAPIClient.getInstance()
+    const data = await client.fetchSpotifyApi('/me/player/currently-playing')
+    if (!data) {
+      return {
+        item: null,
+        is_playing: false,
+        progress_ms: null
+      }
+    }
+    return CurrentlyPlayingSchema.parse(data)
+  } catch (error) {
+    console.error('Failed to fetch currently playing:', error)
+    return {
+      item: null,
+      is_playing: false,
+      progress_ms: null
+    }
+  }
 }
 
 export async function getTopTracks() {
-  const client = SpotifyAPIClient.getInstance()
-  const data = await client.fetchSpotifyApi('/me/top/tracks?time_range=short_term&limit=5')
-  return z.object({ items: z.array(TrackSchema) }).parse(data)
+  try {
+    const client = SpotifyAPIClient.getInstance()
+    const data = await client.fetchSpotifyApi('/me/top/tracks?time_range=short_term&limit=5')
+    return z.object({ items: z.array(TrackSchema) }).parse(data)
+  } catch (error) {
+    console.error('Failed to fetch top tracks:', error)
+    return { items: [] }
+  }
 }
 
 export async function getRecentlyPlayed() {
-  const client = SpotifyAPIClient.getInstance()
-  const data = await client.fetchSpotifyApi('/me/player/recently-played?limit=5')
-  return RecentlyPlayedSchema.parse(data)
+  try {
+    const client = SpotifyAPIClient.getInstance()
+    const data = await client.fetchSpotifyApi('/me/player/recently-played?limit=5')
+    return RecentlyPlayedSchema.parse(data)
+  } catch (error) {
+    console.error('Failed to fetch recently played:', error)
+    return { items: [] }
+  }
 }
 
 export async function getSpotifyData() {
@@ -175,6 +201,13 @@ export async function getSpotifyData() {
     }
   } catch (error) {
     console.error('Failed to fetch Spotify data:', error)
-    throw error
+    return {
+      currentlyPlaying: {
+        item: null,
+        is_playing: false,
+        progress_ms: null
+      },
+      recentlyPlayed: []
+    }
   }
 }

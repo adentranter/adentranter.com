@@ -6,7 +6,7 @@ import { Github, Linkedin, Camera, Instagram, Twitter } from "lucide-react"
 
 export function Navbar() {
   return (
-    <header className="sticky  top-0 z-50 w-full border-b-2 border-primary bg-slate-900/70 backdrop-blur ">
+    <header className="sticky top-0 z-50 w-full border-b-2 border-primary bg-slate-900/70 backdrop-blur">
       <div className="container flex h-20 items-center">
         <Link href="/" className="flex items-center space-x-2">
           <span className="font-bold text-2xl text-white">aden tranter</span>
@@ -19,15 +19,14 @@ export function Navbar() {
           <Link href="/essays" className="text-white/70 transition-colors hover:text-primary">
             essays
           </Link>
-          <Link href="mailto:adentranter@gmail.com" className="text-white/70 transition-colors hover:text-primary">
+          <Link href="mailto:adentranter@gmail.com" className="hidden md:inline-block text-white/70 transition-colors hover:text-primary">
             book a coffee
           </Link>
-        
         </nav>
 
-        <div className="flex items-center space-x-4 text-white/70">
+        {/* Hide social icons on mobile */}
+        <div className="hidden md:flex items-center space-x-4 text-white/70">
           <nav className="flex items-center space-x-4">
-          
             <Link href="https://instagram.com/sdgrasshopper" target="_blank" rel="noreferrer">
               <Instagram className="h-5 w-5" />
             </Link>
