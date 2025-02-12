@@ -34,10 +34,10 @@ export default function RootLayout({
             </main>
             <footer className="text-center space-y-2 text-sm text-white/50 font-light py-8 ">
               <p className="md:flex items-center justify-center gap-1.5 hidden">
-                Strategically placed footer text because UX research says you'll trust me more
+                Strategically placed footer text because UX research says you&apos;ll trust me more
               </p>
               <p className="flex items-center justify-center gap-1.5 text-xs">
-                <span className="md:hidden">Probably the most over-engineered footer you'll see today</span>
+                <span className="md:hidden">Probably the most over-engineered footer you&apos;ll see today</span>
                 <span className="hidden md:inline">Crafted with <span className="text-red-400">❤️</span> from Townsville 
                 <span className="text-xs">(because apparently that makes it more authentic)</span></span>
               </p>

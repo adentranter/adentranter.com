@@ -13,4 +13,4 @@ export const essays = {
   }
 } as const
 
-export type EssaySlug = keyof typeof essays 
+export type EssaySlug = keyof typeof essays; 

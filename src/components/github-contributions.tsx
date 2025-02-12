@@ -24,7 +24,7 @@ export function GitHubContributions() {
   return (
     <div className="w-full pt-4 border-t border-white/10 mt-4">
       <div className="grid grid-cols-[repeat(53,1fr)] gap-1">
-        {contributions.map((day, i) => (
+        {contributions.map((day) => (
           <div
             key={day.date}
             className={`

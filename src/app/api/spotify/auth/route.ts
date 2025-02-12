@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
 const REDIRECT_URI = 'http://localhost:3000/api/spotify/callback'
 
 export async function GET() {

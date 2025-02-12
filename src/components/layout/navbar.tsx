@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ThemeToggle } from "./theme-toggle"
-import { Github, Linkedin, Camera, Instagram, Twitter } from "lucide-react"
+import { Github, Linkedin, Instagram, Twitter } from "lucide-react"
 
 export function Navbar() {
   return (

@@ -1,12 +1,42 @@
-import { notFound } from 'next/navigation'
-import { essays } from '../data'
+import { notFound } from "next/navigation"
+import { essays } from "@/app/essays/data"
 
-export default async function EssayPage({
-  params
-}: {
-  params: { slug: keyof typeof essays }
-}) {
-  const essay = essays[params.slug]
+// Define the params type
+type PageParams = {
+  slug: string
+}
+
+// Define the props type
+type PageProps = {
+  params: PageParams
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+// Metadata generator
+export async function generateMetadata({ params }: PageProps) {
+  const essay = essays[params.slug as keyof typeof essays]
+
+  if (!essay) {
+    return {
+      title: "Essay Not Found",
+    }
+  }
+
+  return {
+    title: `${essay.title}`,
+    description: essay.content.substring(0, 160),
+  }
+}
+
+// Static params for Next.js
+export function generateStaticParams(): PageParams[] {
+  return Object.keys(essays).map((slug) => ({
+    slug,
+  }))
+}
+
+export default function Page({ params }: PageProps) {
+  const essay = essays[params.slug as keyof typeof essays]
 
   if (!essay) {
     notFound()
@@ -19,15 +49,15 @@ export default async function EssayPage({
         <hr className="my-8 border-t border-white/10" />
 
         <time className="text-sm text-gray-500">
-          {new Date(essay.date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+          {new Date(essay.date).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })}
         </time>
       </header>
       <div className="prose prose-lg">
-        {essay.content.split('\n\n').map((paragraph: string, index: number) => (
+        {essay.content.split("\n\n").map((paragraph: string, index: number) => (
           <p key={index} className="mb-4">
             {paragraph}
           </p>
@@ -36,3 +66,4 @@ export default async function EssayPage({
     </article>
   )
 }
+
