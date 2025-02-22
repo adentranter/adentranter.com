@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     url: 'https://adentranter.com', // Replace with your actual domain
     images: [
       {
-        url: '/og-image.jpg', // Replace with your actual OG image path
+        url: '/adentranter.jpg', // Replace with your actual OG image path
         width: 1200,
         height: 630,
         alt: 'Aden Tranter',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Aden Tranter - Software Engineer & Problem Solver',
     description: 'Software engineer specializing in solving unique problems through code and curiosity.',
-    images: ['/og-image.jpg'], // Replace with your actual Twitter card image path
+    images: ['/adentranter.jpg'], // Replace with your actual Twitter card image path
   },
 }
 

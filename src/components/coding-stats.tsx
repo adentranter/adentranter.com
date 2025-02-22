@@ -134,7 +134,7 @@ export function CodingStats() {
                       href={`https://open.spotify.com/track/${item.track.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center"
+                      className="group flex items-center justify-between"
                     >
                       <span 
                         className="text-white group-hover:underline truncate inline-block max-w-[180px] sm:max-w-[200px]" 
@@ -143,10 +143,10 @@ export function CodingStats() {
                         {item.track.name.length > 30 ? item.track.name.slice(0, 30) + '...' : item.track.name}
                       </span>
                       <span 
-                        className="text-white/60 truncate inline-block max-w-[120px] sm:max-w-[150px]" 
+                        className="text-white/60 truncate inline-block max-w-[120px] sm:max-w-[150px] text-right" 
                         title={item.track.artists[0].name}
                       >
-                        {' '}- {item.track.artists[0].name.length > 20 
+                        {item.track.artists[0].name.length > 20 
                             ? item.track.artists[0].name.slice(0, 20) + '...' 
                             : item.track.artists[0].name}
                       </span>
@@ -170,14 +170,14 @@ export function CodingStats() {
               rel="noopener noreferrer"
               className="group"
             >
-              <div className="text-primary text-lg truncate flex flex-col sm:flex-row sm:items-center">
+              <div className="text-primary text-lg truncate flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <span className="group-hover:underline truncate" title={stats.currentlyPlaying.item.name}>
                   {stats.currentlyPlaying.item.name.length > 40 
                     ? stats.currentlyPlaying.item.name.slice(0, 40) + '...' 
                     : stats.currentlyPlaying.item.name}
                 </span>
-                <span className="text-white/80 truncate" title={stats.currentlyPlaying.item.artists[0].name}>
-                  - {stats.currentlyPlaying.item.artists[0].name.length > 40 
+                <span className="text-white/80 truncate text-right" title={stats.currentlyPlaying.item.artists[0].name}>
+                  {stats.currentlyPlaying.item.artists[0].name.length > 40 
                       ? stats.currentlyPlaying.item.artists[0].name.slice(0, 40) + '...' 
                       : stats.currentlyPlaying.item.artists[0].name}
                 </span>

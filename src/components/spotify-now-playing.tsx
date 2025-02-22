@@ -47,12 +47,16 @@ export function SpotifyNowPlaying() {
         <SpotifyIcon className="w-6 h-6" />
         <h3 className="text-xl font-bold">Now Playing</h3>
       </div>
-      <div className="space-y-2">
-        <div className="text-lg font-medium text-primary">{track.item.name}</div>
-        <div className="text-sm text-white/60">
-          {track.item.artists.map(a => a.name).join(', ')}
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <div className="text-lg font-medium text-primary">{track.item.name}</div>
+          <div className="text-lg text-white/60">
+            {track.item.artists.map(a => a.name).join(', ')}
+          </div>
         </div>
-        <div className="text-sm text-white/40">{track.item.album.name}</div>
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-white/40">{track.item.album.name}</div>
+        </div>
       </div>
     </div>
   )
