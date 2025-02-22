@@ -12,7 +12,7 @@ export default function AboutPage() {
       <hr className="my-8 border-t border-white/10" />
       <div className="mb-12">
         <Image
-          src="/me.jpg"
+          src="/adentranter.jpg"
           alt="Portrait photo in a dark setting with blue tones"
           width={400}
           height={400}

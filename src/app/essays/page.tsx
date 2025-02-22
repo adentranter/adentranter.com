@@ -11,9 +11,6 @@ export default async function EssaysPage() {
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
       <h1 className="text-3xl font-bold mb-8">Essays</h1>
-      <p className="text-gray-400 mb-8">
-        Thoughts on software, startups, and the journey of building things.
-      </p>
       <hr className="my-8 border-t border-white/10" />
 
       <div className="space-y-8">
