@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server'
 
+interface ContributionDay {
+  contributionCount: number
+  date: string
+}
+
+interface ContributionWeek {
+  contributionDays: ContributionDay[]
+}
+
 export async function GET() {
   console.log(process.env.GITHUB_TOKEN);
   const response = await fetch(
@@ -37,8 +46,8 @@ export async function GET() {
   const calendar = data.data.user.contributionsCollection.contributionCalendar
   
   // Process the data into a simpler format
-  const contributions = calendar.weeks.flatMap(week => 
-    week.contributionDays.map(day => ({
+  const contributions = calendar.weeks.flatMap((week: ContributionWeek) => 
+    week.contributionDays.map((day: ContributionDay) => ({
       count: day.contributionCount,
       date: day.date,
       level: getContributionLevel(day.contributionCount)

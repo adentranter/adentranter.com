@@ -28,7 +28,7 @@ export default function Home() {
           {/* Browser Chrome */}
           <Link href="/projects/voxit" className="pt-8">
             <Image
-              src="/screenshots/voxit-dashboard.png"
+              src="/screenshots/voxit-dashboardOG.png"
               alt="Voxit Dashboard"
               width={1920}
               height={1080}

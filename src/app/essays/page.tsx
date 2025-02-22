@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { essays } from './data'
+import { essays, Essay } from './data'
 
 export default async function EssaysPage() {
   return (
@@ -9,7 +9,7 @@ export default async function EssaysPage() {
       <hr className="my-8 border-t border-white/10" />
 
       <div className="space-y-8">
-        {Object.values(essays).map((essay) => (
+        {Object.values(essays).map((essay: Essay) => (
           <article key={essay.slug} className="border-b border-gray-200 pb-8">
             <Link 
               href={`/essays/${essay.slug}`}
