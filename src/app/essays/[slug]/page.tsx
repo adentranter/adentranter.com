@@ -1,15 +1,29 @@
-
-
 import { essays } from '../data'
 import { notFound } from 'next/navigation'
+import { Metadata } from 'next'
+import Link from 'next/link'
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const slug = (await params).slug
-  const essay = essays[slug]
+type Props = {
+  params: { slug: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const essay = essays[params.slug]
+  
+  if (!essay) {
+    return {
+      title: 'Essay Not Found'
+    }
+  }
+
+  return {
+    title: `${essay.title} | Aden Tranter`,
+    description: essay.excerpt || essay.title,
+  }
+}
+
+export default async function EssayPage({ params }: Props) {
+  const essay = essays[params.slug]
   
   if (!essay) {
     notFound()
@@ -17,9 +31,16 @@ export default async function Page({
 
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
+      <Link 
+        href="/essays"
+        className="text-gray-400 hover:text-accent-secondary transition-colors mb-8 inline-block"
+      >
+        ← Back to Essays
+      </Link>
+      
       <article className="prose dark:prose-invert">
         <h1>{essay.title}</h1>
-        <time className="text-sm text-gray-500 block mb-8">
+        <time className="text-sm text-gray-400 block mb-8">
           {new Date(essay.date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',

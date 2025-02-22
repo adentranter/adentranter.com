@@ -4,6 +4,34 @@ import { GitHubIcon } from '@/components/icons'
 import { GitHubContributions } from '@/components/github-contributions'
 import { CodingStats } from '@/components/coding-stats'
 import Logo from "@/components/voxlogo";
+import { GitHubStats } from '@/components/github-stats'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Aden Tranter - Software Engineer & Problem Solver',
+  description: 'Software engineer specializing in solving unique problems through code and curiosity. Featuring projects like Voxit, real-time transcription technology.',
+  keywords: ['software engineer', 'web development', 'transcription technology', 'Voxit', 'real-time transcription'],
+  openGraph: {
+    title: 'Aden Tranter - Software Engineer & Problem Solver',
+    description: 'Software engineer specializing in solving unique problems through code and curiosity.',
+    type: 'website',
+    url: 'https://adentranter.com', // Replace with your actual domain
+    images: [
+      {
+        url: '/og-image.jpg', // Replace with your actual OG image path
+        width: 1200,
+        height: 630,
+        alt: 'Aden Tranter',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Aden Tranter - Software Engineer & Problem Solver',
+    description: 'Software engineer specializing in solving unique problems through code and curiosity.',
+    images: ['/og-image.jpg'], // Replace with your actual Twitter card image path
+  },
+}
 
 export default function Home() {
   return (
@@ -66,21 +94,7 @@ export default function Home() {
               <GitHubIcon className="w-6 h-6" />
               <h3 className="text-2xl font-bold">GitHub Activity</h3>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-white/80">Contributions (30d)</span>
-                <span className="text-primary font-mono">247</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-white/80">Current Streak</span>
-                <span className="text-primary font-mono">12 days</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-white/80">Most Active Repo</span>
-                <span className="text-primary font-mono">voxit-web</span>
-              </div>
-            </div>
-    
+            <GitHubStats />
             <GitHubContributions />
           </div>
 
