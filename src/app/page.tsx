@@ -116,7 +116,7 @@ Now
                 <li>Node.js</li>
                 <li>PHP</li>
                 <li>Python</li>
-                <li>C# (Award-winning)</li>
+                <li>C#</li>
                 <li>Java</li>
                 <li>VBS</li>
                 <li>C</li>
