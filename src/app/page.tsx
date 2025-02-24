@@ -67,7 +67,7 @@ export default function Home() {
             Current Project:
             <Logo size="lg" />
           </h2>
-          <h2 className="text-2xl font-light">AI-Powered, Human Proofreader</h2>
+          <h2 className="text-2xl font-light">AI-Powered, Human Perfected</h2>
           <div className="space-y-4 text-white/80">
             <p>
             Customisable, verbatim transcripts with unmatched accuracy. Our hybrid approach blends AI-driven transcription with expert human editing for superior quality at lower costs.
