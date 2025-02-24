@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/layout/navbar"
+import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
 
 const inter = Inter({ 
@@ -20,6 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+     <Analytics/>
       <body className={`${inter.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}>
         <ThemeProvider
           attribute="class"
