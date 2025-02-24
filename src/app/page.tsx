@@ -67,11 +67,11 @@ export default function Home() {
             Current Project:
             <Logo size="lg" />
           </h2>
-          <h2 className="text-2xl font-light">Customisable, verbatim transcripts—delivered in real time.</h2>
+          <h2 className="text-2xl font-light">AI-Powered, Human Proofreader</h2>
           <div className="space-y-4 text-white/80">
             <p>
-              Leading innovation in voice transcription technology with AI-driven, real-time transcripts. Our hybrid
-              approach combines cutting-edge tech with expert human editors—delivering superior quality at lower costs.
+            Customisable, verbatim transcripts with unmatched accuracy. Our hybrid approach blends AI-driven transcription with expert human editing for superior quality at lower costs.
+Now
             </p>
           </div>
         </div>
