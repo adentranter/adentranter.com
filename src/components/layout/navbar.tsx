@@ -15,7 +15,9 @@ export function Navbar() {
           <Link href="/about" className="text-white/70 transition-colors hover:text-primary">
             about
           </Link>
- 
+          <Link href="/essays" className="text-white/70 transition-colors hover:text-primary">
+            essays
+          </Link>
           <Link href="mailto:adentranter@gmail.com" className="hidden md:inline-block text-white/70 transition-colors hover:text-primary">
             book a coffee
           </Link>
