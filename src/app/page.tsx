@@ -55,24 +55,22 @@ export default function Home() {
         {/* Voxit Screenshot */}
         <div className="relative aspect-video rounded-lg overflow-hidden">
           {/* Browser Chrome */}
+          
           <Link href="/projects/voxit" className="pt-8">
+          <h2 className="text-2xl mb-4 font-light">Primary Project</h2>
+
             <Image src="/screenshots/voxit.png" alt="Voxit Dashboard" width={1920} height={1080} className="w-full" />
           </Link>
         </div>
 
         {/* Voxit Description */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-light mr-10 pr-10 ">
-            {" "}
-            Current Project:
-            <Logo size="lg" />
-          </h2>
-          <h2 className="text-2xl font-light">AI-Powered, Human Perfected</h2>
+
+        <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
+        <span className="leading-relaxed"> <Logo size="lg" />  <span className="text-[19px] ml-2 tracking-[0.122em] font-[100] ">AI-Powered, Human Perfected</span></span>
           <div className="space-y-4 text-white/80">
             <p>
-            Customisable, verbatim transcripts with unmatched accuracy. Our hybrid approach blends AI-driven transcription with expert human editing for superior quality at lower costs.
-Now
-            </p>
+Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> Your business isn't stuck in the past, so why is your transcription process? Our AI-driven system + human proofreading workflow slashes costs and improves accuracy - in half the time.       </p>
           </div>
         </div>
       </section>
