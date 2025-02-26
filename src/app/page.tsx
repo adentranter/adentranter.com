@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Aden Tranter - Software Engineer & Problem Solver",
   description:
     "Software engineer specializing in solving unique problems through code and curiosity. Featuring projects like Voxit, real-time transcription technology.",
-  keywords: ["software engineer", "web development", "transcription technology", "Voxit", "real-time transcription"],
+  keywords: ["software engineer", "web development", "transcription technology", "Voxit", "Transcription Stepping Stone"],
   openGraph: {
     title: "Aden Tranter - Software Engineer & Problem Solver",
     description: "Software engineer specializing in solving unique problems through code and curiosity.",
