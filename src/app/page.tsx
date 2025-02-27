@@ -70,7 +70,7 @@ export default function Home() {
         <span className="leading-relaxed"> <Logo size="lg" />  <span className="text-[19px] ml-2 tracking-[0.122em] font-[100] ">AI-Powered, Human Perfected</span></span>
           <div className="space-y-4 text-white/80">
             <p>
-Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> Your business isn't stuck in the past, so why is your transcription process? Our AI-driven system + human proofreading workflow slashes costs and improves accuracy - in half the time.       </p>
+Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> Our AI-driven system + human proofreading workflow slashes costs and improves accuracy - in half the time. <br/> Using WhisperX and LLaMA, we transcribe and proofread your audio files.      </p>
           </div>
         </div>
       </section>
