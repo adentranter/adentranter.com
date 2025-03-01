@@ -37,6 +37,23 @@ type Stats = {
     }
     playedAt: string
   }>
+  topTracks: {
+    weekly: Array<{
+      id: string
+      name: string
+      artists: Array<{ name: string }>
+    }>
+    monthly: Array<{
+      id: string
+      name: string
+      artists: Array<{ name: string }>
+    }>
+    yearly: Array<{
+      id: string
+      name: string
+      artists: Array<{ name: string }>
+    }>
+  }
 }
 
 export function CodingStats() {
@@ -119,14 +136,14 @@ export function CodingStats() {
 
         {/* Right side - Music - full width on mobile */}
         <div className="lg:col-span-7">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-col space-y-6">
+            <div className="flex items-center gap-3">
               <SpotifyIcon className="w-6 h-6" />
               <h3 className="text-2xl font-bold">Music Activity</h3>
             </div>
-
-            <div className="space-y-4">
-              {/* Recently Played - adjusted max-width for mobile */}
+            {/* Recently Played Section */}
+            <div className="space-y-2">
+              <h4 className="text-lg font-semibold text-primary">Recently Played</h4>
               <div className="space-y-2">
                 {stats.recentlyPlayed.slice(0, 8).map((item, i) => (
                   <div key={i} className="text-sm">
@@ -147,45 +164,95 @@ export function CodingStats() {
                         title={item.track.artists[0].name}
                       >
                         {item.track.artists[0].name.length > 20 
-                            ? item.track.artists[0].name.slice(0, 20) + '...' 
-                            : item.track.artists[0].name}
+                          ? item.track.artists[0].name.slice(0, 20) + '...' 
+                          : item.track.artists[0].name}
                       </span>
                     </a>
                   </div>
                 ))}
               </div>
-            </div>      
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Second row - Currently Playing */}
-      {stats.currentlyPlaying && stats.currentlyPlaying.item && (
-        <div className="w-full border-t border-white/10 pt-4">
-          <div className="text-sm">
-            <div className="text-white/60 mb-1">Now Playing:</div>
-            <a 
-              href={`https://open.spotify.com/track/${stats.currentlyPlaying.item.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group"
-            >
-              <div className="text-primary text-lg truncate flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <span className="group-hover:underline truncate" title={stats.currentlyPlaying.item.name}>
-                  {stats.currentlyPlaying.item.name.length > 40 
-                    ? stats.currentlyPlaying.item.name.slice(0, 40) + '...' 
-                    : stats.currentlyPlaying.item.name}
-                </span>
-                <span className="text-white/80 truncate text-right" title={stats.currentlyPlaying.item.artists[0].name}>
-                  {stats.currentlyPlaying.item.artists[0].name.length > 40 
-                      ? stats.currentlyPlaying.item.artists[0].name.slice(0, 40) + '...' 
-                      : stats.currentlyPlaying.item.artists[0].name}
-                </span>
-              </div>
-            </a>
+      {/* Second row - Currently Playing and Top Tracks */}
+      <div className="w-full border-t border-white/10 pt-4">
+        {/* Currently Playing */}
+        {stats.currentlyPlaying && stats.currentlyPlaying.item && (
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-primary mb-2">Now Playing</h4>
+            <div className="flex items-center justify-between">
+              <span className="text-white truncate max-w-[60%]">
+                {stats.currentlyPlaying.item.name}
+              </span>
+              <span className="text-white/60">
+                {stats.currentlyPlaying.item.artists[0].name}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Top Tracks Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Weekly Top Tracks */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-primary">Weekly Picks</h4>
+            <div className="space-y-1">
+              {stats.topTracks.weekly.map((track, i) => (
+                <a 
+                  key={i}
+                  href={`https://open.spotify.com/track/${track.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-white/80 hover:text-white hover:underline truncate"
+                  title={`${track.name} - ${track.artists[0].name}`}
+                >
+                  {track.name}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Monthly Top Tracks */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-primary">Monthly Picks</h4>
+            <div className="space-y-1">
+              {stats.topTracks.monthly.map((track, i) => (
+                <a 
+                  key={i}
+                  href={`https://open.spotify.com/track/${track.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-white/80 hover:text-white hover:underline truncate"
+                  title={`${track.name} - ${track.artists[0].name}`}
+                >
+                  {track.name}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Yearly Top Tracks */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-primary">Yearly Picks</h4>
+            <div className="space-y-1">
+              {stats.topTracks.yearly.map((track, i) => (
+                <a 
+                  key={i}
+                  href={`https://open.spotify.com/track/${track.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-white/80 hover:text-white hover:underline truncate"
+                  title={`${track.name} - ${track.artists[0].name}`}
+                >
+                  {track.name}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
     </>
   )

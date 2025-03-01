@@ -29,11 +29,24 @@ export async function GET() {
               nodes {
                 name
                 pushedAt
+                languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+                  edges {
+                    size
+                    node {
+                      name
+                      color
+                    }
+                  }
+                }
                 defaultBranchRef {
                   target {
                     ... on Commit {
-                      history(first: 1) {
+                      history(first: 100, since: "${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()}") {
                         totalCount
+                        nodes {
+                          additions
+                          deletions
+                        }
                       }
                     }
                   }
@@ -60,10 +73,33 @@ export async function GET() {
   // Get total contributions for last 30 days
   const thirtyDayContributions = contributionsData.data.user.contributionsCollection.contributionCalendar.totalContributions
 
+  // Calculate lines added/removed in the last 30 days
+  const linesStats = repos.reduce((total, repo) => {
+    const commits = repo.defaultBranchRef?.target?.history?.nodes || [];
+    commits.forEach(commit => {
+      total.added += commit.additions || 0;
+      total.removed += commit.deletions || 0;
+    });
+    return total;
+  }, { added: 0, removed: 0 });
+
   return NextResponse.json({
-    ...userData,
+    publicRepos: userData.public_repos,
+    followers: userData.followers,
     thirtyDayContributions,
     mostActiveRepo: mostActiveRepo.name,
-    currentStreak: 12, // This would need a more complex calculation
+    currentStreak: 12,
+    linesAdded: linesStats.added,
+    linesRemoved: linesStats.removed,
+    languages: repos.reduce((acc, repo) => {
+      if (!repo.languages?.edges) return acc;
+      repo.languages.edges.forEach(({ node, size }) => {
+        if (!acc[node.name]) {
+          acc[node.name] = { size: 0, color: node.color };
+        }
+        acc[node.name].size += size;
+      });
+      return acc;
+    }, {}),
   })
 } 

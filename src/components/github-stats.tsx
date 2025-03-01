@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react'
 
 type GitHubStats = {
-  public_repos: number
-  followers: number
-  following: number
-  created_at: string
   thirtyDayContributions: number
   mostActiveRepo: string
   currentStreak: number
+  linesAdded: number
+  linesRemoved: number
 }
 
 export function GitHubStats() {
@@ -55,12 +53,12 @@ export function GitHubStats() {
         <span className="text-primary font-mono">{stats.mostActiveRepo}</span>
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-white/80">Public Repos</span>
-        <span className="text-primary font-mono">{stats.public_repos}</span>
+        <span className="text-white/80">Lines Added (30d)</span>
+        <span className="text-primary font-mono">+{stats.linesAdded}</span>
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-white/80">Followers</span>
-        <span className="text-primary font-mono">{stats.followers}</span>
+        <span className="text-white/80">Lines Removed (30d)</span>
+        <span className="text-primary font-mono">-{stats.linesRemoved}</span>
       </div>
     </div>
   )

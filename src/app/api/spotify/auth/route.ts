@@ -4,7 +4,7 @@ const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const REDIRECT_URI = 'http://localhost:3000/api/spotify/callback'
 
 export async function GET() {
-  const scope = 'user-read-currently-playing user-top-read user-read-recently-played'
+  const scope = 'user-read-currently-playing user-top-read user-read-recently-played user-top-read'
   
   const params = new URLSearchParams({
     client_id: CLIENT_ID!,

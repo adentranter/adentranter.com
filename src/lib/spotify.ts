@@ -166,10 +166,10 @@ export async function getCurrentlyPlaying() {
   }
 }
 
-export async function getTopTracks() {
+export async function getTopTracks(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'short_term') {
   try {
     const client = SpotifyAPIClient.getInstance()
-    const data = await client.fetchSpotifyApi('/me/top/tracks?time_range=short_term&limit=5')
+    const data = await client.fetchSpotifyApi(`/me/top/tracks?time_range=${timeRange}&limit=5`)
     return z.object({ items: z.array(TrackSchema) }).parse(data)
   } catch (error) {
     console.error('Failed to fetch top tracks:', error)
@@ -190,14 +190,28 @@ export async function getRecentlyPlayed() {
 
 export async function getSpotifyData() {
   try {
-    const [currentlyPlaying, recentlyPlayed] = await Promise.all([
+    const [
+      currentlyPlaying,
+      recentlyPlayed,
+      weeklyTopTracks,
+      monthlyTopTracks,
+      yearlyTopTracks
+    ] = await Promise.all([
       getCurrentlyPlaying(),
       getRecentlyPlayed(),
+      getTopTracks('short_term'),
+      getTopTracks('medium_term'),
+      getTopTracks('long_term'),
     ])
 
     return {
       currentlyPlaying,
       recentlyPlayed: recentlyPlayed.items,
+      topTracks: {
+        weekly: weeklyTopTracks.items,
+        monthly: monthlyTopTracks.items,
+        yearly: yearlyTopTracks.items,
+      }
     }
   } catch (error) {
     console.error('Failed to fetch Spotify data:', error)
@@ -207,7 +221,12 @@ export async function getSpotifyData() {
         is_playing: false,
         progress_ms: null
       },
-      recentlyPlayed: []
+      recentlyPlayed: [],
+      topTracks: {
+        weekly: [],
+        monthly: [],
+        yearly: []
+      }
     }
   }
 }
