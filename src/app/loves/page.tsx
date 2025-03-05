@@ -66,7 +66,8 @@ export default function LovesPage() {
         transition={{ duration: 1.5, ease: "easeOut" }}
         className="text-9xl font-bold text-white font-semibold font-light tracking-wider"
       >
-        KATE
+        KATE..<br/>
+        STILL
       </motion.div>
     </div>
   )
