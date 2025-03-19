@@ -4,6 +4,7 @@ import { GitHubIcon } from "@/components/icons"
 import { GitHubContributions } from "@/components/github-contributions"
 import { CodingStats } from "@/components/coding-stats"
 import Logo from "@/components/voxlogo"
+import TwineLogo from "@/components/twineLogo"
 import { GitHubStats } from "@/components/github-stats"
 import type { Metadata } from "next"
 
@@ -83,6 +84,46 @@ export default function Home() {
           <div className="space-y-4 text-white/80">
             <p>
 Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> Our AI-driven system + human proofreading workflow slashes costs and improves accuracy - in half the time. <br/> Using WhisperX and LLaMA, we transcribe and proofread your audio files.      </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Horizontal Rule */}
+      <div className="w-full h-px bg-primary/50" />
+
+      {/* Second Project - Twine */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Twine Screenshot */}
+        <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">
+          {/* Browser Chrome */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">
+            {/* Window Controls */}
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+            </div>
+            {/* URL Bar */}
+            <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
+              <span className="text-xs text-white/50">twine-invoicing.com</span>
+            </div>
+          </div>
+          
+          <Link href="/projects/twine" className="pt-8">
+          <h2 className="text-2xl mb-4 font-light">Secondary Project</h2>
+
+            <Image src="/screenshots/twine.png" alt="Twine Dashboard" width={1920} height={1080} className="w-full" />
+          </Link>
+        </div>
+
+        {/* Twine Description */}
+        <div className="space-y-6">
+          <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
+          <span className="leading-relaxed"> <TwineLogo size="large" />  <span className="text-[19px] ml-2 tracking-[0.122em] font-[100] ">Connect. Invoice. Automate.</span></span>
+          <div className="space-y-4 text-white/80">
+            <p>
+              Seamlessly link Employment Hero with QuickBooks, automatically generating invoices at payroll time - so you never miss a charge or waste time on manual invoicing.
+            </p>
           </div>
         </div>
       </section>
