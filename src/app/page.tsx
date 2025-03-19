@@ -65,11 +65,11 @@ export default function Home() {
             </div>
             {/* URL Bar */}
             <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
-              <span className="text-xs text-white/50">voxit.com.au</span>
+              <span className="text-xs text-white/50">https://voxit.com.au</span>
             </div>
           </div>
           
-          <Link href="/projects/voxit" className="pt-8">
+          <Link href="https://voxit.com.au" className="pt-8">
           <h2 className="text-2xl mb-4 font-light">Primary Project</h2>
 
             <Image src="/screenshots/voxit.png" alt="Voxit Dashboard" width={1920} height={1080} className="w-full" />
@@ -105,11 +105,11 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> Our AI-dri
             </div>
             {/* URL Bar */}
             <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
-              <span className="text-xs text-white/50">twine-invoicing.com</span>
+              <span className="text-xs text-white/50">https://twinebiller.com.au</span>
             </div>
           </div>
           
-          <Link href="/projects/twine" className="pt-8">
+          <Link href="https://twinebiller.com.au" className="pt-8">
           <h2 className="text-2xl mb-4 font-light">Secondary Project</h2>
 
             <Image src="/screenshots/twine.png" alt="Twine Dashboard" width={1920} height={1080} className="w-full" />
