@@ -12,9 +12,9 @@ export const essays: Record<string, Essay> = {
     title: "Critical Systems Revisited",
     date: '2025-03-20',
     excerpt: "A reflection on why critical systems often fail while consumer platforms remain reliable, exploring the impact of organizational structure and company culture on system resilience.",
-    content: `# Critical Systems Revisited
+    content: `
 *December 26, 2016 (Updated March 20, 2025)*  
-*Reading Time: 3 minutes*
+*Reading Time: 6 minutes and probably give or two thou of some milli-seconds*
 
 A while ago there was an outage of a major airline due to a computer system glitch. Jetstar's computer system went down.[1]
 
