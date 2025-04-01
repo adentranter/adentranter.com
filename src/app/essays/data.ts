@@ -202,7 +202,7 @@ The path forward requires pragmatic choices about what we can implement now and 
   'being-happy': {
     slug: 'being-happy',
     title: "Being Happy, or How to Probably Be a Pragmatic Leader",
-    date: '2025-03-25',
+    date: '2025-04-1',
     excerpt: "An exploration of how perspective and zoom levels affect leadership and happiness, arguing that effective leadership requires mastering the art of shifting focus between different levels of detail.",
     content: `
 Everyone and everything is 'okay' until you zoom in. This thought process creates the context of cynicism. However, the take away from this shouldn't be the view of a cynic. 
