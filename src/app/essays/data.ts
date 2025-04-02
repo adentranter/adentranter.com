@@ -229,6 +229,6 @@ A pragmatic leader understands that different decisions require different zoom l
 Perhaps happiness itself comes from mastering this skill of perspective shifting. When we zoom too far in on problems, we lose sight of progress. When we stay too zoomed out, we miss the meaningful details that bring joy.
 Happiness means finding the sweet spot of perspective that allows for both effectiveness and contentment - knowing when to dive deep and when to rise above.
 
-Be happy and go create something that helps people. and be clever and apply as much leverage as possible.`
+Be happy and bake a cake for your neighbour`
   }
 } 
