@@ -67,7 +67,7 @@ export default function LovesPage() {
         className="text-9xl font-bold text-white font-semibold font-light tracking-wider"
       >
         KATE..<br/>
-        STILL
+        ALWAYS
       </motion.div>
     </div>
   )

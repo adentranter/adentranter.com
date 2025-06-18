@@ -18,9 +18,7 @@ export function Navbar() {
           <Link href="/essays" className="text-white/70 transition-colors hover:text-primary">
             essays
           </Link>
-          <Link href="mailto:adentranter@gmail.com" className="hidden md:inline-block text-white/70 transition-colors hover:text-primary">
-            book a coffee
-          </Link>
+
         </nav>
 
         {/* Hide social icons on mobile */}
