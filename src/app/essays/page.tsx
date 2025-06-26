@@ -5,6 +5,29 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Essays | Aden Tranter',
   description: 'Thoughts on software, startups, and figuring things out.',
+  alternates: {
+    canonical: 'https://adentranter.com/essays',
+  },
+  openGraph: {
+    title: 'Essays | Aden Tranter',
+    description: 'Thoughts on software, startups, and figuring things out.',
+    url: 'https://adentranter.com/essays',
+    type: 'website',
+    images: [
+      {
+        url: '/adentranter.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Aden Tranter',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Essays | Aden Tranter',
+    description: 'Thoughts on software, startups, and figuring things out.',
+    images: ['/adentranter.jpg'],
+  },
 }
 
 export default async function EssaysPage() {

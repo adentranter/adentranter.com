@@ -2,6 +2,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/layout/navbar"
 import { Analytics } from "@vercel/analytics/react"
+import Script from "next/script"
 import "./globals.css"
 
 const inter = Inter({ 
@@ -22,6 +23,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
      <Analytics/>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-D7MGQXTCLN"
+        strategy="afterInteractive"
+      />
+      <Script id="gtag-init" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-D7MGQXTCLN', {
+            page_path: window.location.pathname,
+          });
+        `}
+      </Script>
       <body className={`${inter.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}>
         <ThemeProvider
           attribute="class"

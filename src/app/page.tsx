@@ -133,6 +133,44 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Usin
       {/* Horizontal Rule */}
       <div className="w-full h-px bg-primary/50" />
 
+
+      {/* Fourth Project – What Am I On (working title) */}
+      {/*<section className="grid grid-cols-1 lg:grid-cols-2 gap-12">*/}
+        {/* Screenshot placeholder */}
+        {/*<div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">*/}
+          {/* Browser Chrome */}
+          {/*<div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">*/}
+            {/* Window Controls */}
+            {/*<div className="flex gap-1.5">*/}
+              {/*<div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>*/}
+              {/*<div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>*/}
+              {/*<div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>*/}
+            {/*</div>*/}
+            {/* URL Bar */}
+            {/*<div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">*/}
+              {/*<span className="text-xs text-white/50">https://holistictracker.app (coming soon)</span>*/}
+            {/*</div>*/}
+          {/*</div>*/}
+
+          {/*<Image src="/file.svg" alt="Holistic Tracker" width={1920} height={1080} className="pt-8 w-full" />*/}
+        {/*</div>*/}
+
+        {/* Description */}
+        {/*<div className="space-y-6">*/}
+          {/*<h2 className="text-2xl font-light mb-4">What&nbsp;Am&nbsp;I&nbsp;On&nbsp;(working&nbsp;title)</h2>*/}
+          {/*<div className="space-y-4 text-white/80">*/}
+            {/*<p>*/}
+              {/*A full-stack health journal that correlates sleep, substance use, breathing exercises, mood and pain*/}
+              {/*scores. Overlay the data to spot patterns, triggers, and actionable insights over time.*/}
+            {/*</p>*/}
+            {/*<p className="text-white/60">Tech Stack: Next.js, Prisma, Postgres, tRPC, React&nbsp;Charts</p>*/}
+          {/*</div>*/}
+        {/*</div>*/}
+      {/*</section>*/}
+
+      {/* Horizontal Rule */}
+      {/*<div className="w-full h-px bg-primary/50" />*/}
+
       {/* Stats Section */}
       <section className="space-y-6">
         {/* GitHub and Activity Stats Grid */}
@@ -159,7 +197,7 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Usin
 
       {/* Community Section */}
       <section className="text-center space-y-6 py-16">
-        <h2 className="text-3xl font-bold">Join the QLD Technical Founders Slack</h2>
+        <h2 className="text-3xl font-bold">Join the Townsville Product Builders/Founders/Tinkers</h2>
         <p className="text-white/80 max-w-xl mx-auto">
           Building apps, software, and solving cool problems gets easier when you have a community behind you. I'm
           kicking-off a brand-new (read: <em>very</em> early-stage) Slack space for technical—and technical-curious—founders

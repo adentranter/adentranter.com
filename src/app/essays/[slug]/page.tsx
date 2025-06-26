@@ -16,6 +16,31 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${essay.title} | Aden Tranter`,
     description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
+    alternates: {
+      canonical: `https://adentranter.com/essays/${slug}`,
+    },
+    openGraph: {
+      title: `${essay.title} | Aden Tranter`,
+      description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
+      type: 'article',
+      url: `https://adentranter.com/essays/${slug}`,
+      publishedTime: new Date(essay.date).toISOString(),
+      authors: ['Aden Tranter'],
+      images: [
+        {
+          url: '/adentranter.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Aden Tranter',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${essay.title} | Aden Tranter`,
+      description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
+      images: ['/adentranter.jpg'],
+    },
   }
 }
 export default async function Page({
