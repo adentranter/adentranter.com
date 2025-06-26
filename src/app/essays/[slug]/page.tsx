@@ -3,8 +3,8 @@ import { essays } from "../data"
 import { notFound } from "next/navigation"
 import ReactMarkdown from 'react-markdown'
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const slug = (await params).slug
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const essay = essays[slug]
 
   if (!essay) {
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function Page({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
   const essay = essays[slug]
