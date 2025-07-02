@@ -107,6 +107,10 @@ function JamContent() {
       if (bucket.length >= 5) return prev
       return { ...prev, [currentP]: [...bucket, track] }
     })
+
+    // Hide search list after adding a song
+    setResults([])
+    setQuery("")
   }
 
   const shareLink = () => {
@@ -125,7 +129,7 @@ function JamContent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="container py-12 space-y-8 flex-grow">
+      <main className="max-w-none md:container py-12 space-y-8 flex-grow">
         <h1 className="text-3xl font-light mb-4">Let's pick this jam</h1>
 
         {/* Participant Switcher */}
