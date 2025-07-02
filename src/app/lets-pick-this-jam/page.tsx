@@ -1,6 +1,9 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+// This page relies on client-side routing hooks; disable static optimization
+export const dynamic = "force-dynamic"
+
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 
@@ -15,7 +18,7 @@ type Participant = "Ann" | "Kate" | "Aden"
 
 const PARTICIPANTS: Participant[] = ["Ann", "Kate", "Aden"]
 
-export default function JamPage() {
+function JamContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -233,5 +236,13 @@ export default function JamPage() {
         </section>
       </main>
     </div>
+  )
+}
+
+export default function JamPage() {
+  return (
+    <Suspense>
+      <JamContent />
+    </Suspense>
   )
 } 
