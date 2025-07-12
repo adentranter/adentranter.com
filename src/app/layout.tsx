@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navbar } from "@/components/layout/navbar"
+import { TextBackground } from "@/components/text-background"
 import { Analytics } from "@vercel/analytics/react"
 import Script from "next/script"
 import "./globals.css"
@@ -43,7 +44,8 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col">
+          <TextBackground />
+          <div className="min-h-screen flex flex-col relative z-10">
             <Navbar />
             <main className="container flex-grow">
               {children}

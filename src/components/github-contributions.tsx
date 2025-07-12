@@ -18,63 +18,77 @@ export function GitHubContributions() {
     contributions: [],
     languages: {},
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [contributionsRes, statsRes] = await Promise.all([
-        fetch('/api/github-contributions'),
-        fetch('/api/github-stats')
-      ])
-      const contributionsData = await contributionsRes.json()
-      const statsData = await statsRes.json()
-      
-      setStats({
-        contributions: contributionsData.contributions,
-        languages: statsData.languages || {},
-      })
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch('/api/github-stats')
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        
+        console.log('GitHub stats data received:', {
+          contributionsCount: data.contributions?.length || 0,
+          languagesCount: Object.keys(data.languages || {}).length,
+          sampleContributions: data.contributions?.slice(0, 5),
+          totalLanguageBytes: Object.values(data.languages || {}).reduce((sum: number, lang: any) => sum + lang.size, 0)
+        })
+        
+        setStats({
+          contributions: data.contributions || [],
+          languages: data.languages || {},
+        })
+      } catch (error) {
+        console.error('Error fetching GitHub stats:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load GitHub stats')
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchStats()
   }, [])
+
+  if (loading) {
+    return <div className="text-white/60">Loading contributions...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-400">
+        <div className="font-semibold">Error loading contributions:</div>
+        <div className="text-sm">{error}</div>
+      </div>
+    )
+  }
 
   // Calculate total bytes for percentage calculation
   const totalBytes = Object.values(stats.languages).reduce((sum, lang) => sum + lang.size, 0)
 
   return (
     <div className="w-full space-y-6">
-      {/* Language Distribution */}
-      <div className="space-y-2">
-        <h3 className="text-sm text-white/60">Languages</h3>
-        <div className="space-y-2">
-          {Object.entries(stats.languages)
-            .sort(([, a], [, b]) => b.size - a.size)
-            .slice(0, 5)
-            .map(([name, { size, color }]) => (
-              <div key={name} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>{name}</span>
-                  <span>{((size / totalBytes) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(size / totalBytes) * 100}%`,
-                      backgroundColor: color,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+   
 
       {/* Contribution Graph */}
       <div className="pt-4 border-t border-white/10">
+        <h3 className="text-sm text-white/60 mb-2">Contribution Activity</h3>
         <div className="grid grid-cols-[repeat(53,1fr)] gap-1">
-          {stats.contributions.map((day) => (
+          {stats.contributions.map((day, index) => (
             <div
-              key={day.date}
+              key={`${day.date}-${index}`}
               className={`
                 aspect-square rounded-sm
                 ${day.level === 0 && 'bg-white/5'}

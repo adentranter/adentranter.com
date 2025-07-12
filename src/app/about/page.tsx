@@ -55,8 +55,8 @@ export default function AboutPage() {
             before Airbnb. Nobody thought &ldquo;hey, I wish random people would drive me around&rdquo; before Uber.
           </p>
           <p>
-            This is where my obsession with user experience comes in. Not just the &ldquo;how does this button work&rdquo; 
-            kind of UX, but the whole picture - how people perceive, understand, and ultimately use what you&apos;re 
+            This is where my obsession with user experience comes in. And not just the stuff like &ldquo;how does this button work&rdquo; 
+            kind of UX, <br />But the whole picture; holisitic. It's how people perceive, understand, and ultimately use what you&apos;re 
             building. It&apos;s this weird intersection of psychology, design, and problem-solving that keeps 
             pulling me back in, even when I know better.
           </p>
