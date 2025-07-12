@@ -18,7 +18,7 @@ export function TextBackground() {
   const [mouseVelocity, setMouseVelocity] = useState(0)
   const [blur, setBlur] = useState(0)
   const lastMousePosRef = useRef({ x: 0, y: 0 })
-  const frameRef = useRef<number>()
+  const frameRef = useRef<number | null>(null)
 
   // Extract and process all essay text with caching
   const processedWords = useMemo(() => {
