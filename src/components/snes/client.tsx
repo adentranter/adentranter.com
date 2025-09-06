@@ -77,9 +77,37 @@ export default function SnesClient(props: { sessionId?: string }) {
     
     console.log('[Controller] Emitting:', { control, state, key, code, type })
     
-    const ev = new KeyboardEvent(type, { key, code, bubbles: true })
+    // Try multiple ways to send the event to the emulator
+    const ev = new KeyboardEvent(type, { key, code, bubbles: true, cancelable: true })
+    
+    // Method 1: Dispatch to window
     window.dispatchEvent(ev)
+    
+    // Method 2: Dispatch to document
     document.dispatchEvent(ev)
+    
+    // Method 3: Dispatch to the emulator container
+    const emulatorContainer = document.getElementById('ejs-container')
+    if (emulatorContainer) {
+      emulatorContainer.dispatchEvent(ev)
+    }
+    
+    // Method 4: Try to focus the emulator iframe
+    const iframe = document.querySelector('iframe')
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.dispatchEvent(ev)
+      } catch (e) {
+        console.log('[Controller] Could not dispatch to iframe:', e)
+      }
+    }
+    
+    // Method 5: Try to focus the emulator canvas
+    const canvas = document.querySelector('canvas')
+    if (canvas) {
+      canvas.focus()
+      canvas.dispatchEvent(ev)
+    }
   }
 
   // Generate a per-tab session id when not provided from route
@@ -177,7 +205,20 @@ export default function SnesClient(props: { sessionId?: string }) {
         setStatus('Starting emulator…')
         const container = document.getElementById('ejs-container')
         if (container) container.innerHTML = ''
-        setTimeout(() => setStatus(''), 500)
+        
+        // Wait for emulator to load and then focus it
+        setTimeout(() => {
+          const canvas = document.querySelector('canvas')
+          const iframe = document.querySelector('iframe')
+          if (canvas) {
+            canvas.focus()
+            console.log('[Emulator] Focused canvas')
+          } else if (iframe) {
+            iframe.focus()
+            console.log('[Emulator] Focused iframe')
+          }
+          setStatus('')
+        }, 1000)
       } catch (e: any) {
         console.error(e); setStatus(e?.message || 'Failed to start emulator')
       }
