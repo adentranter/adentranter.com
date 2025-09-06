@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import Pusher from 'pusher-js'
 import { deleteRom, getRom, listRoms, putRom, type StoredRomMeta } from "@/lib/idb-roms"
 
 type RemoteRom = { name: string; url: string }
@@ -28,11 +29,11 @@ export default function SnesClient() {
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const hostWsRef = useRef<WebSocket | null>(null)
-  const [wsStatus, setWsStatus] = useState<'idle' | 'connecting' | 'open' | 'closed' | 'error'>('idle')
-  const [sseStatus, setSseStatus] = useState<'idle' | 'open' | 'closed'>('idle')
-  const sseRef = useRef<EventSource | null>(null)
-  const transportPref = (process.env.NEXT_PUBLIC_SNES_TRANSPORT || 'auto').toLowerCase() as 'auto' | 'sse'
+  const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
+  const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+  const usePusher = !!pusherKey && !!pusherCluster
+  const [pusherStatus, setPusherStatus] = useState<'idle' | 'subscribing' | 'subscribed' | 'error'>('idle')
+  const pusherRef = useRef<Pusher | null>(null)
 
   // Shared key mapping + event emitter for WS/SSE
   const keymap: Record<string, string> = {
@@ -175,62 +176,31 @@ export default function SnesClient() {
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
 
-  // Host WebSocket: receive controller inputs and synthesize keyboard events (skipped if SSE forced)
+  // Pusher subscription only
   useEffect(() => {
     if (typeof window === 'undefined' || !sessionId) return
-    if (transportPref === 'sse') {
-      setWsStatus('closed')
-      if (!sseRef.current) startSse()
-      return
+    if (!usePusher) return
+    setPusherStatus('subscribing')
+    const p = new Pusher(pusherKey!, { cluster: pusherCluster!, forceTLS: true })
+    pusherRef.current = p
+    const channelName = `snes-${sessionId}`
+    const ch = p.subscribe(channelName)
+    ch.bind('pusher:subscription_succeeded', () => setPusherStatus('subscribed'))
+    ch.bind('input', (data: any) => {
+      if (data?.type === 'input' && data?.input?.type === 'button') {
+        const { control, state } = data.input
+        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
+      }
+    })
+    ch.bind('pusher:subscription_error', () => setPusherStatus('error'))
+    return () => {
+      try { ch.unbind_all(); p.unsubscribe(channelName); p.disconnect() } catch {}
+      pusherRef.current = null
+      setPusherStatus('idle')
     }
-    setWsStatus('connecting')
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const url = `${proto}://${window.location.host}/api/snes/${encodeURIComponent(sessionId)}/ws?role=host`
-    console.log('[snes] WS(host) connecting', url)
-    const ws = new WebSocket(url)
-    hostWsRef.current = ws
+  }, [sessionId, usePusher, pusherKey, pusherCluster])
 
-    
-
-    ws.addEventListener('message', (e) => {
-      let data: any
-      try { data = JSON.parse(e.data) } catch { return }
-      if (data?.type === 'input' && data?.input?.type === 'button') {
-        const { control, state } = data.input
-        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
-      }
-    })
-
-    ws.addEventListener('open', () => { console.log('[snes] WS(host) open'); setWsStatus('open') })
-    ws.addEventListener('error', (ev) => { console.warn('[snes] WS(host) error', ev); setWsStatus('error') })
-    ws.addEventListener('close', () => {
-      console.log('[snes] WS(host) closed')
-      setWsStatus('closed')
-      // Fallback to SSE when WS closes/errors
-      startSse()
-    })
-
-    return () => { try { ws.close() } catch {} }
-  }, [sessionId, transportPref])
-
-  function startSse() {
-    if (!sessionId || sseRef.current) return
-    const url = `/api/snes/${encodeURIComponent(sessionId)}/sse`
-    console.log('[snes] SSE(host) start', url)
-    const es = new EventSource(url)
-    sseRef.current = es
-    setSseStatus('open')
-    es.addEventListener('message', (e) => {
-      // console.debug('[snes] SSE message', e.data)
-      let data: any
-      try { data = JSON.parse(e.data) } catch { return }
-      if (data?.type === 'input' && data?.input?.type === 'button') {
-        const { control, state } = data.input
-        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
-      }
-    })
-    es.addEventListener('error', (ev) => { console.warn('[snes] SSE(host) error', ev); setSseStatus('closed'); try { es.close() } catch {} ; sseRef.current = null })
-  }
+  // (WS/SSE removed)
 
   const toggleFullscreen = async () => {
     const el = gameViewRef.current
@@ -343,7 +313,7 @@ export default function SnesClient() {
           </button>
         </div>
         {status && <div className="text-sm text-white/70">{status}</div>}
-        <div className="text-xs text-white/50">WS: {wsStatus} · SSE: {sseStatus}</div>
+        <div className="text-xs text-white/50">Pusher: {pusherStatus}</div>
         {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 

@@ -7,27 +7,19 @@ type Props = { sessionId: string; playerId: string }
 export default function SnesController({ sessionId, playerId }: Props) {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
   const [isPortrait, setIsPortrait] = useState(false)
   const [fsSupported, setFsSupported] = useState(false)
   const [orientationLocked, setOrientationLocked] = useState(false)
   const [started, setStarted] = useState(false)
-  const transportPref = (process.env.NEXT_PUBLIC_SNES_TRANSPORT || 'auto').toLowerCase() as 'auto' | 'sse'
 
-  const wsUrl = useMemo(() => {
-    if (typeof window === 'undefined') return ''
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    return `${proto}://${window.location.host}/api/snes/${encodeURIComponent(sessionId)}/ws?role=player&playerId=${encodeURIComponent(playerId)}`
-  }, [sessionId, playerId])
   const pushUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
     return `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=${encodeURIComponent(playerId)}`
   }, [sessionId, playerId])
 
-  // In SSE mode, proactively announce/register this player so the host stream exists
+  // Register this controller session with the host via a lightweight hello
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (transportPref !== 'sse') return
     if (!pushUrl) return
     let cancelled = false
     ;(async () => {
@@ -55,22 +47,7 @@ export default function SnesController({ sessionId, playerId }: Props) {
       }
     })()
     return () => { cancelled = true }
-  }, [transportPref, pushUrl])
-
-  useEffect(() => {
-    if (!wsUrl) return
-    if (transportPref === 'sse') { setConnected(true); return }
-    let closed = false
-    console.log('[snes] WS(player) connecting', wsUrl)
-    const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
-
-    ws.addEventListener('open', () => { console.log('[snes] WS(player) open'); setConnected(true) })
-    ws.addEventListener('close', () => { console.log('[snes] WS(player) closed'); setConnected(false); if (!closed) setError('Disconnected') })
-    ws.addEventListener('error', () => { console.warn('[snes] WS(player) error'); setError('Connection error') })
-
-    return () => { closed = true; try { ws.close() } catch {} }
-  }, [wsUrl, transportPref])
+  }, [pushUrl])
 
   // Lock page scrolling while controller is open
   useEffect(() => {
@@ -119,16 +96,10 @@ export default function SnesController({ sessionId, playerId }: Props) {
   }
 
   function send(control: string, state: 'down' | 'up') {
-    const ws = wsRef.current
     const payload = { type: 'button', control, state }
-    if (transportPref !== 'sse' && ws && ws.readyState === WebSocket.OPEN) {
-      try { ws.send(JSON.stringify(payload)) } catch {}
-    } else {
-      // Fallback: POST to SSE push endpoint
-      if (pushUrl) {
-        fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
-          .catch(() => {})
-      }
+    if (pushUrl) {
+      fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+        .catch(() => {})
     }
   }
 
@@ -144,7 +115,7 @@ export default function SnesController({ sessionId, playerId }: Props) {
       <div className="max-w-md mx-auto p-4 space-y-4 h-[100dvh]">
         <h1 className="text-xl font-semibold">SNES Controller · P{playerId}</h1>
         <div className="text-sm text-white/60">Session: <code>{sessionId}</code></div>
-        <div className="text-sm">Status: {connected ? <span className="text-emerald-400">{transportPref === 'sse' ? 'sse' : 'connected'}</span> : <span className="text-white/60">connecting…</span>}</div>
+        <div className="text-sm">Status: {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
         {error && <div className="text-sm text-red-400">{error}</div>}
 
         {/* D-Pad + ABXY */}

@@ -1,4 +1,4 @@
-import { broadcast } from "@/app/api/snes/_sseBus"
+import { publishToPusher } from '@/lib/pusher-server'
 
 export const runtime = 'nodejs'
 
@@ -22,13 +22,15 @@ export async function POST(req: Request, { params }: any) {
       return new Response('Invalid input', { status: 400 })
     }
     const packet = { type: 'input', input: { type: 'button', control, state }, playerId }
-    await broadcast(sessionId, packet)
+    // Pusher fanout
+    await publishToPusher(`snes-${sessionId}`, 'input', packet)
     return new Response('ok')
   }
 
   // Allow a lightweight hello/registration message to prime the channel
   if (type === 'hello') {
-    await broadcast(sessionId, { type: 'hello', playerId, ts: Date.now() })
+    const hello = { type: 'hello', playerId, ts: Date.now() }
+    await publishToPusher(`snes-${sessionId}`, 'hello', hello)
     return new Response('ok')
   }
 
