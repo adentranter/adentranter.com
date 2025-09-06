@@ -62,10 +62,11 @@ export default async function Page({
       <article className="prose dark:prose-invert max-w-none">
         <h1 className="text-3xl font-bold mb-4">{essay.title}</h1>
         <time className="text-sm text-gray-500 block mb-8 text-left">
-          {new Date(essay.date).toLocaleDateString('en-US', {
+          {new Date(`${essay.date}T00:00:00Z`).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'UTC'
           })}
         </time>
         <div>

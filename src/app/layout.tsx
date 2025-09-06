@@ -21,23 +21,28 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+  const enableGA = process.env.NODE_ENV === 'production' && !!GA_ID
   return (
     <html lang="en" suppressHydrationWarning>
-     <Analytics/>
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-D7MGQXTCLN"
-        strategy="afterInteractive"
-      />
-      <Script id="gtag-init" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-D7MGQXTCLN', {
-            page_path: window.location.pathname,
-          });
-        `}
-      </Script>
+      {enableGA && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="gtag-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_ID}', {
+                page_path: window.location.pathname,
+              });
+            `}
+          </Script>
+        </>
+      )}
       <body className={`${inter.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -65,6 +70,7 @@ export default function RootLayout({
             </footer>
           </div>
         </ThemeProvider>
+        <Analytics/>
       </body>
     </html>
   )

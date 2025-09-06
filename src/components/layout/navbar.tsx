@@ -18,6 +18,11 @@ export function Navbar() {
           <Link href="/essays" className="text-white/70 transition-colors hover:text-primary">
             essays
           </Link>
+          {false && (
+            <Link href="/snes" className="text-white/70 transition-colors hover:text-primary">
+              snes
+            </Link>
+          )}
 
         </nav>
 

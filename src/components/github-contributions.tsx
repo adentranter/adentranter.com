@@ -40,13 +40,6 @@ export function GitHubContributions() {
           throw new Error(data.error)
         }
         
-        console.log('GitHub stats data received:', {
-          contributionsCount: data.contributions?.length || 0,
-          languagesCount: Object.keys(data.languages || {}).length,
-          sampleContributions: data.contributions?.slice(0, 5),
-          totalLanguageBytes: Object.values(data.languages || {}).reduce((sum: number, lang: any) => sum + lang.size, 0)
-        })
-        
         setStats({
           contributions: data.contributions || [],
           languages: data.languages || {},

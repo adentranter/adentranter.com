@@ -8,7 +8,9 @@ type GitHubStats = {
   currentStreak: number
   linesAdded: number
   linesRemoved: number
-  languages?: { name: string; percentage: number; color: string }[]
+  // Back-compat: API returns languages map; new field is languagesArray
+  languages?: Record<string, { size: number; color: string | null }>
+  languagesArray?: { name: string; percentage: number; color: string }[]
 }
 
 // Simple SVG Pie Chart Component
@@ -157,8 +159,16 @@ export function GitHubStats() {
     { name: 'Other', percentage: 6.2, color: '#6b7280' }
   ]
 
-  // Ensure languages is always an array
-  const languages = Array.isArray(stats.languages) ? stats.languages : defaultLanguages
+  // Prefer API-provided percentage array; fallback to deriving from size map; else defaults
+  let languages = stats.languagesArray
+  if (!languages && stats.languages) {
+    const total = Object.values(stats.languages).reduce((s, l) => s + (l?.size || 0), 0) || 1
+    languages = Object.entries(stats.languages)
+      .map(([name, v]) => ({ name, percentage: (v.size / total) * 100, color: v.color || '#6b7280' }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 8)
+  }
+  if (!languages) languages = defaultLanguages
 
   return (
     <div className="space-y-4">

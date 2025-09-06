@@ -20,8 +20,8 @@ export async function GET(request: Request) {
     }),
   })
 
-  const data = await response.json()
-  console.log('Refresh tokenzz:', data.refresh_token)
+  // Intentionally do not log tokens
+  await response.json()
   
   return NextResponse.redirect('/')
   } catch (error) {

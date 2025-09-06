@@ -65,7 +65,6 @@ export function CodingStats() {
       try {
         const response = await fetch('/api/coding-stats')
         const data = await response.json()
-        console.log(data);
         setStats(data)
       } catch (error) {
         console.error('Failed to fetch stats:', error)

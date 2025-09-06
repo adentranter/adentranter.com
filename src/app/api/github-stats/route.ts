@@ -98,8 +98,6 @@ export async function GET() {
       `
     }
     
-    console.log('Sending GraphQL query:', JSON.stringify(graphqlQuery, null, 2))
-    
     // Fetch contribution data using GraphQL
     const contributionsResponse = await fetch('https://api.github.com/graphql', {
       method: 'POST',
@@ -117,17 +115,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch contribution data' }, { status: 500 })
     }
 
-    const responseText = await contributionsResponse.text()
-    console.log('GraphQL response text:', responseText)
-    
-    let contributionsData
-    try {
-      contributionsData = JSON.parse(responseText)
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError)
-      console.error('Response text:', responseText)
-      return NextResponse.json({ error: 'Invalid JSON response from GitHub API' }, { status: 500 })
-    }
+    const contributionsData = await contributionsResponse.json()
 
     if (contributionsData.errors) {
       console.error('GraphQL errors:', contributionsData.errors)
@@ -159,7 +147,7 @@ export async function GET() {
     )
     
     const allRepos = [...personalRepos, ...orgRepos]
-    console.log(`Found ${personalRepos.length} personal repos and ${orgRepos.length} org repos`)
+    // Calculate language sizes across repositories
 
     // Calculate most active repo (based on commits in last 30 days)
     const mostActiveRepo = allRepos.reduce((max, repo) => {
@@ -186,6 +174,28 @@ export async function GET() {
     // For now, keeping the placeholder value
     const currentStreak = 12
 
+    // Reduce language sizes to percentage array (top 8)
+    const languageSizeMap: Record<string, { size: number; color: string | null }> = allRepos.reduce((acc, repo) => {
+      if (!repo.languages?.edges) return acc
+      repo.languages.edges.forEach(({ node, size }: any) => {
+        if (!acc[node.name]) {
+          acc[node.name] = { size: 0, color: node.color || null }
+        }
+        acc[node.name].size += size
+      })
+      return acc
+    }, {} as Record<string, { size: number; color: string | null }>)
+
+    const totalBytes = Object.values(languageSizeMap).reduce((sum, l) => sum + l.size, 0) || 1
+    const languagesArray = Object.entries(languageSizeMap)
+      .map(([name, { size, color }]) => ({
+        name,
+        percentage: (size / totalBytes) * 100,
+        color: color || '#6b7280',
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 8)
+
     const result = {
       publicRepos: userData.public_repos,
       followers: userData.followers,
@@ -194,20 +204,12 @@ export async function GET() {
       currentStreak,
       linesAdded: linesStats.added,
       linesRemoved: linesStats.removed,
-      languages: allRepos.reduce((acc, repo) => {
-        if (!repo.languages?.edges) return acc;
-        repo.languages.edges.forEach(({ node, size }) => {
-          if (!acc[node.name]) {
-            acc[node.name] = { size: 0, color: node.color };
-          }
-          acc[node.name].size += size;
-        });
-        return acc;
-      }, {}),
+      // Keep languages as size map for backward compatibility
+      languages: languageSizeMap,
+      // New: array of languages with percentages for charting
+      languagesArray,
       contributions, // Add contribution calendar data
     }
-
-    console.log('Final result:', result)
     return NextResponse.json(result)
 
   } catch (error) {

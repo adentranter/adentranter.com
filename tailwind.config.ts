@@ -38,12 +38,13 @@ const config = {
           DEFAULT: "#f8f9fa",
           dark: "#1a1a1a",
         },
-        primary: "white",
+        primary: "#ffffff",
         accent: {
-          DEFAULT: "cream",//real navy
-          secondary: "silver",//real pink
-          muted: "gray",
-          success: "green",
+          // Use valid color values so opacity modifiers (e.g. /5) work
+          DEFAULT: "#FFF5DC", // cream
+          secondary: "#C0C0C0", // silver
+          muted: "#808080", // gray
+          success: "#22c55e", // green-500
         },
       },
     },

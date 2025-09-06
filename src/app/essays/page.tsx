@@ -49,10 +49,11 @@ export default async function EssaysPage() {
                   {essay.title}
                 </h2>
                 <time className="text-sm text-gray-400 mt-2 block">
-                  {new Date(essay.date).toLocaleDateString('en-US', {
+                  {new Date(`${essay.date}T00:00:00Z`).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    timeZone: 'UTC'
                   })}
                 </time>
                 {essay.excerpt && (

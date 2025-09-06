@@ -1,4 +1,4 @@
-export const GA_TRACKING_ID = "G-D7MGQXTCLN"
+export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || ""
 
 // Because this runs only in the browser, we guard against SSR
 declare global {
@@ -11,7 +11,7 @@ declare global {
  * Track a pageview. Call this with the current URL after a route change.
  */
 export const pageview = (url: string) => {
-  if (typeof window === "undefined" || !window.gtag) return
+  if (typeof window === "undefined" || !window.gtag || !GA_TRACKING_ID) return
 
   window.gtag("config", GA_TRACKING_ID, {
     page_path: url,
@@ -33,7 +33,7 @@ export const event = <T extends string | undefined = undefined>({
   label?: T
   value?: number
 }) => {
-  if (typeof window === "undefined" || !window.gtag) return
+  if (typeof window === "undefined" || !window.gtag || !GA_TRACKING_ID) return
 
   window.gtag("event", action, {
     event_category: category,
