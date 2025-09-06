@@ -12,6 +12,7 @@ export default function SnesController({ sessionId, playerId }: Props) {
   const [fsSupported, setFsSupported] = useState(false)
   const [orientationLocked, setOrientationLocked] = useState(false)
   const [started, setStarted] = useState(false)
+  const transportPref = (process.env.NEXT_PUBLIC_SNES_TRANSPORT || 'auto').toLowerCase() as 'auto' | 'sse'
 
   const wsUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
@@ -25,16 +26,18 @@ export default function SnesController({ sessionId, playerId }: Props) {
 
   useEffect(() => {
     if (!wsUrl) return
+    if (transportPref === 'sse') { setConnected(true); return }
     let closed = false
+    console.log('[snes] WS(player) connecting', wsUrl)
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
-    ws.addEventListener('open', () => setConnected(true))
-    ws.addEventListener('close', () => { setConnected(false); if (!closed) setError('Disconnected') })
-    ws.addEventListener('error', () => setError('Connection error'))
+    ws.addEventListener('open', () => { console.log('[snes] WS(player) open'); setConnected(true) })
+    ws.addEventListener('close', () => { console.log('[snes] WS(player) closed'); setConnected(false); if (!closed) setError('Disconnected') })
+    ws.addEventListener('error', () => { console.warn('[snes] WS(player) error'); setError('Connection error') })
 
     return () => { closed = true; try { ws.close() } catch {} }
-  }, [wsUrl])
+  }, [wsUrl, transportPref])
 
   // Lock page scrolling while controller is open
   useEffect(() => {
@@ -85,11 +88,14 @@ export default function SnesController({ sessionId, playerId }: Props) {
   function send(control: string, state: 'down' | 'up') {
     const ws = wsRef.current
     const payload = { type: 'button', control, state }
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    if (transportPref !== 'sse' && ws && ws.readyState === WebSocket.OPEN) {
       try { ws.send(JSON.stringify(payload)) } catch {}
     } else {
       // Fallback: POST to SSE push endpoint
-      if (pushUrl) fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
+      if (pushUrl) {
+        fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+          .catch(() => {})
+      }
     }
   }
 
@@ -105,7 +111,7 @@ export default function SnesController({ sessionId, playerId }: Props) {
       <div className="max-w-md mx-auto p-4 space-y-4 h-[100dvh]">
         <h1 className="text-xl font-semibold">SNES Controller · P{playerId}</h1>
         <div className="text-sm text-white/60">Session: <code>{sessionId}</code></div>
-        <div className="text-sm">Status: {connected ? <span className="text-emerald-400">connected</span> : <span className="text-white/60">connecting…</span>}</div>
+        <div className="text-sm">Status: {connected ? <span className="text-emerald-400">{transportPref === 'sse' ? 'sse' : 'connected'}</span> : <span className="text-white/60">connecting…</span>}</div>
         {error && <div className="text-sm text-red-400">{error}</div>}
 
         {/* D-Pad + ABXY */}
