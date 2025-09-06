@@ -120,64 +120,57 @@ export default function SnesController({ sessionId, playerId }: Props) {
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white touch-none">
       <div className="h-[100dvh] flex flex-col">
-        {/* Header */}
-        <div className="p-3 text-center border-b border-white/10">
-          <h1 className="text-lg font-semibold">SNES Controller · P{playerId}</h1>
-          <div className="text-xs text-white/60">Session: <code className="text-xs">{sessionId}</code></div>
-          <div className="text-xs">Status: {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
-          {error && <div className="text-xs text-red-400">{error}</div>}
+        {/* Shoulder Buttons - Full width bars at top */}
+        <div className="grid grid-cols-2 h-12">
+          <button className="bg-white/10 active:bg-white/20 text-sm font-bold flex items-center justify-center" {...bind('l')}>L</button>
+          <button className="bg-white/10 active:bg-white/20 text-sm font-bold flex items-center justify-center" {...bind('r')}>R</button>
         </div>
 
-        {/* Main Controller Area */}
-        <div className="flex-1 flex items-center justify-center p-2">
-          <div className="w-full h-full max-w-lg">
-            {/* Shoulder Buttons */}
-            <div className="grid grid-cols-2 gap-4 mb-4 h-16">
-              <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('l')}>L</button>
-              <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('r')}>R</button>
-            </div>
-
-            {/* Main Controls */}
-            <div className="grid grid-cols-2 gap-6 items-center flex-1">
-              {/* D-Pad */}
-              <div className="flex flex-col items-center h-full justify-center">
-                <div className="text-sm text-white/60 mb-3">D-Pad</div>
-                <div className="grid grid-rows-3 grid-cols-3 gap-2 w-32 h-32">
-                  <div />
-                  <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('up')}>↑</button>
-                  <div />
-                  <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('left')}>←</button>
-                  <div />
-                  <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('right')}>→</button>
-                  <div />
-                  <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('down')}>↓</button>
-                  <div />
-                </div>
-              </div>
-
-              {/* ABXY */}
-              <div className="flex flex-col items-center h-full justify-center">
-                <div className="text-sm text-white/60 mb-3">Action</div>
-                <div className="grid grid-rows-3 grid-cols-3 gap-2 w-32 h-32">
-                  <div />
-                  <button className="rounded-xl bg-primary/30 active:bg-primary text-lg font-bold flex items-center justify-center" {...bind('x')}>X</button>
-                  <div />
-                  <button className="rounded-xl bg-primary/30 active:bg-primary text-lg font-bold flex items-center justify-center" {...bind('y')}>Y</button>
-                  <div />
-                  <button className="rounded-xl bg-primary/30 active:bg-primary text-lg font-bold flex items-center justify-center" {...bind('a')}>A</button>
-                  <div />
-                  <button className="rounded-xl bg-primary/30 active:bg-primary text-lg font-bold flex items-center justify-center" {...bind('b')}>B</button>
-                  <div />
-                </div>
+        {/* Main Controller Area - Takes up most of the screen */}
+        <div className="flex-1 flex items-center justify-center px-6 py-4">
+          <div className="w-full max-w-lg flex items-center justify-between">
+            {/* D-Pad - Left side - MUCH LARGER */}
+            <div className="flex flex-col items-center">
+              <div className="grid grid-rows-3 grid-cols-3 gap-2 w-40 h-40">
+                <div />
+                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('up')}>↑</button>
+                <div />
+                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('left')}>←</button>
+                <div />
+                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('right')}>→</button>
+                <div />
+                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('down')}>↓</button>
+                <div />
               </div>
             </div>
 
-            {/* Start/Select */}
-            <div className="grid grid-cols-2 gap-4 mt-4 h-16">
-              <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('select')}>Select</button>
-              <button className="rounded-xl bg-white/10 active:bg-white/20 text-lg font-bold flex items-center justify-center" {...bind('start')}>Start</button>
+            {/* ABXY - Right side - MUCH LARGER */}
+            <div className="flex flex-col items-center">
+              <div className="grid grid-rows-3 grid-cols-3 gap-2 w-40 h-40">
+                <div />
+                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('x')}>X</button>
+                <div />
+                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('y')}>Y</button>
+                <div />
+                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('a')}>A</button>
+                <div />
+                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('b')}>B</button>
+                <div />
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Start/Select - Small buttons at bottom */}
+        <div className="grid grid-cols-2 h-10 px-4 pb-2">
+          <button className="bg-white/10 active:bg-white/20 text-xs font-medium flex items-center justify-center" {...bind('select')}>Select</button>
+          <button className="bg-white/10 active:bg-white/20 text-xs font-medium flex items-center justify-center" {...bind('start')}>Start</button>
+        </div>
+
+        {/* Status overlay - Small and unobtrusive */}
+        <div className="absolute top-14 left-2 text-xs text-white/60">
+          <div>P{playerId} • {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
+          {error && <div className="text-red-400">{error}</div>}
         </div>
       </div>
 

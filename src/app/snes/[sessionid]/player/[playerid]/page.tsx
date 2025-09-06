@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-export default function Page({ params }: any) {
-  const { sessionid, playerid } = params
+export default async function Page({ params }: any) {
+  const { sessionid, playerid } = await params
   return <SnesController sessionId={sessionid} playerId={playerid} />
 }
