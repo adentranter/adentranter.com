@@ -30,6 +30,38 @@ export default function SnesClient() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const hostWsRef = useRef<WebSocket | null>(null)
   const [wsStatus, setWsStatus] = useState<'idle' | 'connecting' | 'open' | 'closed' | 'error'>('idle')
+  const [sseStatus, setSseStatus] = useState<'idle' | 'open' | 'closed'>('idle')
+  const sseRef = useRef<EventSource | null>(null)
+
+  // Shared key mapping + event emitter for WS/SSE
+  const keymap: Record<string, string> = {
+    up: 'ArrowUp',
+    down: 'ArrowDown',
+    left: 'ArrowLeft',
+    right: 'ArrowRight',
+    a: 'KeyX',
+    b: 'KeyZ',
+    x: 'KeyS',
+    y: 'KeyA',
+    l: 'KeyQ',
+    r: 'KeyW',
+    start: 'Enter',
+    select: 'ShiftRight',
+  }
+
+  function emit(control: string, state: 'down' | 'up') {
+    const code = keymap[control]
+    if (!code) return
+    const type = state === 'down' ? 'keydown' : 'keyup'
+    let key: string | undefined
+    if (code.startsWith('Key')) key = code.slice(3).toLowerCase()
+    else if (code.startsWith('Arrow')) key = code
+    else if (code.startsWith('Shift')) key = 'Shift'
+    else if (code === 'Enter') key = 'Enter'
+    const ev = new KeyboardEvent(type, { key, code, bubbles: true })
+    window.dispatchEvent(ev)
+    document.dispatchEvent(ev)
+  }
 
   // Generate a per-tab session id
   useEffect(() => {
@@ -151,34 +183,7 @@ export default function SnesClient() {
     const ws = new WebSocket(url)
     hostWsRef.current = ws
 
-    const keymap: Record<string, string> = {
-      up: 'ArrowUp',
-      down: 'ArrowDown',
-      left: 'ArrowLeft',
-      right: 'ArrowRight',
-      a: 'KeyX',
-      b: 'KeyZ',
-      x: 'KeyS',
-      y: 'KeyA',
-      l: 'KeyQ',
-      r: 'KeyW',
-      start: 'Enter',
-      select: 'ShiftRight',
-    }
-
-    function emit(control: string, state: 'down' | 'up') {
-      const code = keymap[control]
-      if (!code) return
-      const type = state === 'down' ? 'keydown' : 'keyup'
-      let key: string | undefined
-      if (code.startsWith('Key')) key = code.slice(3).toLowerCase()
-      else if (code.startsWith('Arrow')) key = code
-      else if (code.startsWith('Shift')) key = 'Shift'
-      else if (code === 'Enter') key = 'Enter'
-      const ev = new KeyboardEvent(type, { key, code, bubbles: true })
-      window.dispatchEvent(ev)
-      document.dispatchEvent(ev)
-    }
+    
 
     ws.addEventListener('message', (e) => {
       let data: any
@@ -191,10 +196,30 @@ export default function SnesClient() {
 
     ws.addEventListener('open', () => setWsStatus('open'))
     ws.addEventListener('error', () => setWsStatus('error'))
-    ws.addEventListener('close', () => setWsStatus('closed'))
+    ws.addEventListener('close', () => {
+      setWsStatus('closed')
+      // Fallback to SSE when WS closes/errors
+      startSse()
+    })
 
     return () => { try { ws.close() } catch {} }
   }, [sessionId])
+
+  function startSse() {
+    if (!sessionId || sseRef.current) return
+    const es = new EventSource(`/api/snes/${encodeURIComponent(sessionId)}/sse`)
+    sseRef.current = es
+    setSseStatus('open')
+    es.addEventListener('message', (e) => {
+      let data: any
+      try { data = JSON.parse(e.data) } catch { return }
+      if (data?.type === 'input' && data?.input?.type === 'button') {
+        const { control, state } = data.input
+        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
+      }
+    })
+    es.addEventListener('error', () => { setSseStatus('closed'); try { es.close() } catch {} ; sseRef.current = null })
+  }
 
   const toggleFullscreen = async () => {
     const el = gameViewRef.current

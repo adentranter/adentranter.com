@@ -38,6 +38,12 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      firework.js:
+        specifier: ^1.1.22
+        version: 1.1.22
+      fireworks-js:
+        specifier: ^2.10.8
+        version: 2.10.8
       framer-motion:
         specifier: ^12.4.10
         version: 12.4.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1361,6 +1367,13 @@ packages:
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
+
+  firework.js@1.1.22:
+    resolution: {integrity: sha512-0AjqXOYN6lW9HeEI3G0Ubh2XpskGLpq/OoW7GznIxSApbqL2gheto6RhBJo3qXnoh6vm8UK2uaB6hdaonpWwPQ==}
+    hasBin: true
+
+  fireworks-js@2.10.8:
+    resolution: {integrity: sha512-UZNxeJvRmQzLisN4iriWXqKojG9TDJqc0dPmkUw0/+AEQQ3w8z1Jx2YdFSiBGSVb/u4dPTQXU109GMVblzhfpg==}
 
   flat-cache@3.2.0:
     resolution: {integrity: sha512-CYcENa+FtcUKLmhhqyctpclsq7QF38pKjZHsGNiSQF5r4FtoKDWabFDl3hzaEQMvT1LHEysw5twgLvpYYb4vbw==}
@@ -4104,6 +4117,10 @@ snapshots:
     dependencies:
       locate-path: 6.0.0
       path-exists: 4.0.0
+
+  firework.js@1.1.22: {}
+
+  fireworks-js@2.10.8: {}
 
   flat-cache@3.2.0:
     dependencies:

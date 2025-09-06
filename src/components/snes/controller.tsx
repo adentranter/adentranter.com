@@ -8,11 +8,19 @@ export default function SnesController({ sessionId, playerId }: Props) {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
+  const [isPortrait, setIsPortrait] = useState(false)
+  const [fsSupported, setFsSupported] = useState(false)
+  const [orientationLocked, setOrientationLocked] = useState(false)
+  const [started, setStarted] = useState(false)
 
   const wsUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     return `${proto}://${window.location.host}/api/snes/${encodeURIComponent(sessionId)}/ws?role=player&playerId=${encodeURIComponent(playerId)}`
+  }, [sessionId, playerId])
+  const pushUrl = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    return `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=${encodeURIComponent(playerId)}`
   }, [sessionId, playerId])
 
   useEffect(() => {
@@ -28,10 +36,61 @@ export default function SnesController({ sessionId, playerId }: Props) {
     return () => { closed = true; try { ws.close() } catch {} }
   }, [wsUrl])
 
+  // Lock page scrolling while controller is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const prevHtml = document.documentElement.style.overflow
+    const prevBody = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = prevHtml
+      document.body.style.overflow = prevBody
+    }
+  }, [])
+
+  // Track orientation and fullscreen capability
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(orientation: portrait)')
+    const update = () => setIsPortrait(mq.matches)
+    update()
+    mq.addEventListener?.('change', update)
+    setFsSupported(!!document.documentElement.requestFullscreen)
+    return () => { mq.removeEventListener?.('change', update) }
+  }, [])
+
+  async function enableFullscreenAndLock() {
+    try {
+      if (document.fullscreenElement == null) {
+        await document.documentElement.requestFullscreen()
+      }
+    } catch {}
+    try {
+      const anyScreen = (screen as any)
+      if (anyScreen?.orientation?.lock) {
+        await anyScreen.orientation.lock('landscape')
+        setOrientationLocked(true)
+      }
+    } catch {
+      // orientation lock might be disallowed until PWA install; ignore
+    }
+  }
+
+  async function handleStart() {
+    await enableFullscreenAndLock()
+    setStarted(true)
+  }
+
   function send(control: string, state: 'down' | 'up') {
     const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-    try { ws.send(JSON.stringify({ type: 'button', control, state })) } catch {}
+    const payload = { type: 'button', control, state }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify(payload)) } catch {}
+    } else {
+      // Fallback: POST to SSE push endpoint
+      if (pushUrl) fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
+    }
   }
 
   const bind = (control: string) => ({
@@ -42,8 +101,8 @@ export default function SnesController({ sessionId, playerId }: Props) {
   })
 
   return (
-    <div className="min-h-screen p-4 text-white">
-      <div className="max-w-md mx-auto space-y-4">
+    <div className="fixed inset-0 overflow-hidden bg-black text-white touch-none">
+      <div className="max-w-md mx-auto p-4 space-y-4 h-[100dvh]">
         <h1 className="text-xl font-semibold">SNES Controller · P{playerId}</h1>
         <div className="text-sm text-white/60">Session: <code>{sessionId}</code></div>
         <div className="text-sm">Status: {connected ? <span className="text-emerald-400">connected</span> : <span className="text-white/60">connecting…</span>}</div>
@@ -89,7 +148,31 @@ export default function SnesController({ sessionId, playerId }: Props) {
           <button className="py-2 rounded bg-white/10 active:bg-white/20" {...bind('start')}>Start</button>
         </div>
       </div>
+
+      {/* Tap-to-start gate (requests fullscreen + lock) */}
+      {!started && (
+        <button onClick={handleStart} className="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-6 text-center">
+          <div className="space-y-3">
+            <div className="text-lg font-medium">Tap to start</div>
+            <div className="text-sm text-white/70">Enables fullscreen and tries to lock landscape.</div>
+          </div>
+        </button>
+      )}
+
+      {/* Portrait overlay asking to rotate / enable fullscreen (shown after start) */}
+      {started && isPortrait && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-6 text-center">
+          <div className="space-y-3">
+            <div className="text-lg font-medium">Rotate your phone</div>
+            <div className="text-sm text-white/70">This controller is best in landscape.</div>
+            {fsSupported && (
+              <button onClick={enableFullscreenAndLock} className="mt-1 px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
+                Enable fullscreen & try lock
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

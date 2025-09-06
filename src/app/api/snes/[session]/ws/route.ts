@@ -1,4 +1,6 @@
 export const runtime = 'edge'
+export const preferredRegion = 'syd1'
+export const dynamic = 'force-dynamic'
 
 // Minimal type to satisfy TS in Edge runtime
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
