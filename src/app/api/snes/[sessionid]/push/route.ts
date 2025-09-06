@@ -3,7 +3,8 @@ import { publishToPusher } from '@/lib/pusher-server'
 export const runtime = 'nodejs'
 
 export async function POST(req: Request, { params }: any) {
-  const sessionId = params.sessionid
+  const { sessionid } = await params
+  const sessionId = sessionid
   const url = new URL(req.url)
   const playerId = url.searchParams.get('playerId') || undefined
 

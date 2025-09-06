@@ -14,7 +14,7 @@ function formatSize(bytes: number) {
   return `${bytes.toFixed(1)} ${units[i]}`
 }
 
-export default function SnesClient() {
+export default function SnesClient(props: { sessionId?: string }) {
   const [roms, setRoms] = useState<StoredRomMeta[]>([])
   const [loading, setLoading] = useState(false)
   const [activeRomLocal, setActiveRomLocal] = useState<string | null>(null)
@@ -28,11 +28,12 @@ export default function SnesClient() {
   const gameViewRef = useRef<HTMLDivElement | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(props.sessionId || null)
   const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
   const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
   const usePusher = !!pusherKey && !!pusherCluster
   const [pusherStatus, setPusherStatus] = useState<'idle' | 'subscribing' | 'subscribed' | 'error'>('idle')
+  const [controllerCount, setControllerCount] = useState<number>(0)
   const pusherRef = useRef<Pusher | null>(null)
 
   // Shared key mapping + event emitter for WS/SSE
@@ -65,11 +66,13 @@ export default function SnesClient() {
     document.dispatchEvent(ev)
   }
 
-  // Generate a per-tab session id
+  // Generate a per-tab session id when not provided from route
   useEffect(() => {
     if (typeof window === 'undefined') return
+    if (props.sessionId) return
     const sid = (crypto as any)?.randomUUID?.() || Math.random().toString(36).slice(2)
     setSessionId(sid)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const controllerBase = useMemo(() => {
@@ -181,18 +184,27 @@ export default function SnesClient() {
     if (typeof window === 'undefined' || !sessionId) return
     if (!usePusher) return
     setPusherStatus('subscribing')
-    const p = new Pusher(pusherKey!, { cluster: pusherCluster!, forceTLS: true })
+    const p = new Pusher(pusherKey!, { cluster: pusherCluster!, forceTLS: true, enableStats: true, wsHost: undefined })
     pusherRef.current = p
     const channelName = `snes-${sessionId}`
     const ch = p.subscribe(channelName)
     ch.bind('pusher:subscription_succeeded', () => setPusherStatus('subscribed'))
+    ch.bind('pusher:connection_established', () => console.debug('[pusher] connection established'))
+    ch.bind('pusher:error', (err: any) => { console.error('[pusher] error', err); setPusherStatus('error') })
+    p.connection.bind('state_change', (states: any) => { console.debug('[pusher] state', states) })
+    p.connection.bind('error', (err: any) => { console.error('[pusher] conn error', err) })
     ch.bind('input', (data: any) => {
       if (data?.type === 'input' && data?.input?.type === 'button') {
         const { control, state } = data.input
         if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
       }
     })
-    ch.bind('pusher:subscription_error', () => setPusherStatus('error'))
+    ch.bind('pusher:subscription_error', (err: any) => { console.error('[pusher] sub error', err); setPusherStatus('error') })
+    ch.bind('hello', (data: any) => {
+      // naive increment; in a real app track unique controller ids
+      setControllerCount((n) => n + 1)
+      console.debug('[pusher] hello', data)
+    })
     return () => {
       try { ch.unbind_all(); p.unsubscribe(channelName); p.disconnect() } catch {}
       pusherRef.current = null
@@ -246,6 +258,24 @@ export default function SnesClient() {
   const matches = (s: string) => searchLower.length === 0 || searchKey(s).includes(searchLower)
   const filteredLocal = roms.filter(r => matches(r.name))
   const filteredRemote = (remoteRoms || []).filter(r => matches(r.name) || matches(r.url))
+
+  if (!mounted) {
+    return (
+      <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        <div className="space-y-4">
+          <h1 className="text-2xl font-semibold">SNES</h1>
+          <div className="text-sm text-white/60">Loading...</div>
+        </div>
+        <div className="space-y-3">
+          <div className="rounded-lg bg-black/50 border border-white/10 p-2 relative">
+            <div className="aspect-video w-full bg-black flex items-center justify-center">
+              <div className="text-white/50">Loading emulator...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
@@ -313,7 +343,7 @@ export default function SnesClient() {
           </button>
         </div>
         {status && <div className="text-sm text-white/70">{status}</div>}
-        <div className="text-xs text-white/50">Pusher: {pusherStatus}</div>
+        <div className="text-xs text-white/50">Pusher: {pusherStatus} · Controllers: {controllerCount}</div>
         {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 

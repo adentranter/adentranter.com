@@ -29,6 +29,33 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## SNES
+
+This project includes a SNES emulator and mobile controller via Pusher.
+
+Environment variables required for controller connectivity:
+
+```
+# Client (browser)
+NEXT_PUBLIC_PUSHER_KEY=pk_xxxxx
+NEXT_PUBLIC_PUSHER_CLUSTER=ap1
+# Optional override for QR host (defaults to window.location.origin)
+NEXT_PUBLIC_SNES_HOST=your-domain.com
+NEXT_PUBLIC_SNES_PROTOCOL=https
+NEXT_PUBLIC_SNES_PORT=
+
+# Server (API routes)
+PUSHER_APP_ID=xxxx
+PUSHER_KEY=pk_xxxxx
+PUSHER_SECRET=sk_xxxxx
+PUSHER_CLUSTER=ap1
+```
+
+Flow:
+- Visiting `/snes` redirects to a new session at `/snes/[session]`.
+- That page shows the game area, local/remote ROMs, and QR codes for controllers at `/snes/[session]/player/1` and `/snes/[session]/player/2`.
+- The controller page has no navbar and registers with the host so you should see Pusher status and a controller count.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

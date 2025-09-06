@@ -1,5 +1,6 @@
-import SnesClient from "@/components/snes/client"
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { randomUUID } from "crypto"
 
 export const metadata: Metadata = {
   title: "SNES",
@@ -7,5 +8,6 @@ export const metadata: Metadata = {
 }
 
 export default function SnesPage() {
-  return <SnesClient />
+  const sid = randomUUID()
+  redirect(`/snes/${encodeURIComponent(sid)}`)
 }

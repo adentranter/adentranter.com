@@ -5,7 +5,9 @@ import { Navbar } from "@/components/layout/navbar"
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const hideChrome = pathname?.startsWith("/fireworks")
+  const hideChrome =
+    pathname?.startsWith("/fireworks") ||
+    (pathname?.startsWith("/snes/") && pathname?.includes("/player/"))
 
   if (hideChrome) {
     return (
