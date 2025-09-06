@@ -33,6 +33,16 @@ export default function SnesClient(props: { sessionId?: string }) {
   const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
   const usePusher = !!pusherKey && !!pusherCluster
   const [pusherStatus, setPusherStatus] = useState<'idle' | 'subscribing' | 'subscribed' | 'error'>('idle')
+  
+  // Debug Pusher env vars
+  useEffect(() => {
+    console.log('[Pusher Debug]', {
+      pusherKey: pusherKey ? `${pusherKey.substring(0, 8)}...` : 'MISSING',
+      pusherCluster: pusherCluster || 'MISSING',
+      usePusher,
+      sessionId
+    })
+  }, [pusherKey, pusherCluster, usePusher, sessionId])
   const [controllerCount, setControllerCount] = useState<number>(0)
   const pusherRef = useRef<Pusher | null>(null)
 
@@ -54,13 +64,19 @@ export default function SnesClient(props: { sessionId?: string }) {
 
   function emit(control: string, state: 'down' | 'up') {
     const code = keymap[control]
-    if (!code) return
+    if (!code) {
+      console.warn('[Controller] Unknown control:', control)
+      return
+    }
     const type = state === 'down' ? 'keydown' : 'keyup'
     let key: string | undefined
     if (code.startsWith('Key')) key = code.slice(3).toLowerCase()
     else if (code.startsWith('Arrow')) key = code
     else if (code.startsWith('Shift')) key = 'Shift'
     else if (code === 'Enter') key = 'Enter'
+    
+    console.log('[Controller] Emitting:', { control, state, key, code, type })
+    
     const ev = new KeyboardEvent(type, { key, code, bubbles: true })
     window.dispatchEvent(ev)
     document.dispatchEvent(ev)
@@ -194,9 +210,13 @@ export default function SnesClient(props: { sessionId?: string }) {
     p.connection.bind('state_change', (states: any) => { console.debug('[pusher] state', states) })
     p.connection.bind('error', (err: any) => { console.error('[pusher] conn error', err) })
     ch.bind('input', (data: any) => {
+      console.log('[Pusher] Received input:', data)
       if (data?.type === 'input' && data?.input?.type === 'button') {
         const { control, state } = data.input
-        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
+        if ((state === 'down' || state === 'up') && typeof control === 'string') {
+          console.log('[Pusher] Processing button:', { control, state })
+          emit(control, state)
+        }
       }
     })
     ch.bind('pusher:subscription_error', (err: any) => { console.error('[pusher] sub error', err); setPusherStatus('error') })
@@ -343,7 +363,12 @@ export default function SnesClient(props: { sessionId?: string }) {
           </button>
         </div>
         {status && <div className="text-sm text-white/70">{status}</div>}
-        <div className="text-xs text-white/50">Pusher: {pusherStatus} · Controllers: {controllerCount}</div>
+        <div className="text-xs text-white/50">
+          Pusher: {pusherStatus}
+          {!usePusher && <span className="text-red-400"> (env vars missing)</span>}
+          {usePusher && pusherStatus === 'idle' && <span className="text-yellow-400"> (connecting...)</span>}
+          · Controllers: {controllerCount}
+        </div>
         {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 

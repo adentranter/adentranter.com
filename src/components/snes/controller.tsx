@@ -91,15 +91,29 @@ export default function SnesController({ sessionId, playerId }: Props) {
   }
 
   async function handleStart() {
+    // Test vibration on start
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate([100, 50, 100]) // Test pattern
+      } catch {}
+    }
     await enableFullscreenAndLock()
     setStarted(true)
   }
 
   function send(control: string, state: 'down' | 'up') {
     const payload = { type: 'button', control, state }
+    console.log('[Controller] Sending:', payload, 'to:', pushUrl)
+    
     if (pushUrl) {
       fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
-        .catch(() => {})
+        .then(res => {
+          console.log('[Controller] Response:', res.status, res.ok)
+          if (!res.ok) console.error('[Controller] Failed to send:', res.statusText)
+        })
+        .catch(err => {
+          console.error('[Controller] Network error:', err)
+        })
     }
     
     // Haptic feedback on button press
@@ -171,6 +185,12 @@ export default function SnesController({ sessionId, playerId }: Props) {
         <div className="absolute top-14 left-2 text-xs text-white/60">
           <div>P{playerId} • {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
           {error && <div className="text-red-400">{error}</div>}
+          <button 
+            onClick={() => send('a', 'down')} 
+            className="mt-1 px-2 py-1 bg-red-500 text-white text-xs rounded"
+          >
+            Test A
+          </button>
         </div>
       </div>
 
