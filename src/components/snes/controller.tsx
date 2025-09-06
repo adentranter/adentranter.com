@@ -24,6 +24,39 @@ export default function SnesController({ sessionId, playerId }: Props) {
     return `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=${encodeURIComponent(playerId)}`
   }, [sessionId, playerId])
 
+  // In SSE mode, proactively announce/register this player so the host stream exists
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (transportPref !== 'sse') return
+    if (!pushUrl) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(pushUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ type: 'hello', ts: Date.now() }),
+        })
+        if (!cancelled) {
+          if (res.ok) { setConnected(true) }
+          else {
+            // Fallback: send a no-op button event to ensure session creation
+            const res2 = await fetch(pushUrl, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ type: 'button', control: '__hello', state: 'down' }),
+            })
+            if (res2.ok) setConnected(true)
+            else setError('Failed to register with host')
+          }
+        }
+      } catch {
+        if (!cancelled) setError('Failed to reach host')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [transportPref, pushUrl])
+
   useEffect(() => {
     if (!wsUrl) return
     if (transportPref === 'sse') { setConnected(true); return }
