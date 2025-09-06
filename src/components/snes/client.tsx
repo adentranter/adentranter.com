@@ -279,24 +279,23 @@ export default function SnesClient() {
 
   return (
     <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
-      {/* Left column: Search + Lists */}
+      {/* Left column: Lists (with search above local games) */}
       <div className="space-y-4">
         <h1 className="text-2xl font-semibold">SNES</h1>
-
-        {/* Search */}
-        <div>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search games…"
-            className="w-full rounded-md bg-white/10 px-3 py-2 text-sm outline-none"
-          />
-        </div>
 
         {/* Local Library */}
         <div className="space-y-2">
           <h2 className="text-lg font-medium">Your Library</h2>
+          {/* Search above uploaded games */}
+          <div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search games…"
+              className="w-full rounded-md bg-white/10 px-3 py-2 text-sm outline-none"
+            />
+          </div>
           {roms.length === 0 && (<p className="text-sm text-white/50">No ROMs yet. Upload on the right.</p>)}
           <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
             {filteredLocal.map((r) => (
