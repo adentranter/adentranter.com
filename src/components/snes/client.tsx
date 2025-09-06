@@ -45,6 +45,16 @@ export default function SnesClient(props: { sessionId?: string }) {
   }, [pusherKey, pusherCluster, usePusher, sessionId])
   const [controllerCount, setControllerCount] = useState<number>(0)
   const pusherRef = useRef<Pusher | null>(null)
+  
+  // Game selection state for controller navigation
+  const [selectedGameIndex, setSelectedGameIndex] = useState<number>(0)
+  const [selectedGameType, setSelectedGameType] = useState<'local' | 'remote'>('local')
+  const [gameScreenshots, setGameScreenshots] = useState<Record<string, string>>({})
+  const [isNavigatingGames, setIsNavigatingGames] = useState(false)
+  
+  // Multi-stage interface state
+  const [interfaceStage, setInterfaceStage] = useState<'qr' | 'gameSelection' | 'emulator'>('qr')
+  const [hasControllerConnected, setHasControllerConnected] = useState(false)
 
   // Two-player key mapping for keyboard controls
   const keymap: Record<string, string> = {
@@ -127,6 +137,29 @@ export default function SnesClient(props: { sessionId?: string }) {
     } else {
       // Fallback: dispatch to window but don't interfere with EmulatorJS
       window.dispatchEvent(ev)
+    }
+  }
+
+  // Screenshot capture function
+  const captureGameScreenshot = async (gameName: string) => {
+    try {
+      const canvas = document.querySelector('canvas') as HTMLCanvasElement
+      if (!canvas) return
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+        }, 'image/png', 0.8)
+      })
+      
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        setGameScreenshots(prev => ({ ...prev, [gameName]: url }))
+        console.log('[Screenshot] Captured for:', gameName)
+      }
+    } catch (error) {
+      console.error('[Screenshot] Failed to capture:', error)
     }
   }
 
@@ -272,6 +305,11 @@ export default function SnesClient(props: { sessionId?: string }) {
             console.log('[Emulator] Focused iframe')
           }
           setStatus('')
+          
+          // Capture screenshot after emulator loads
+          setTimeout(() => {
+            captureGameScreenshot(gameName)
+          }, 3000) // Wait 3 seconds for game to load to start screen
         }, 1000)
       } catch (e: any) {
         console.error(e); setStatus(e?.message || 'Failed to start emulator')
@@ -284,7 +322,7 @@ export default function SnesClient(props: { sessionId?: string }) {
   useEffect(() => {
     if (!mounted) return
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
       // Prevent default behavior for game keys to avoid browser shortcuts
       const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyX', 'KeyZ', 'KeyC', 'KeyV', 'KeyQ', 'KeyE', 'KeyI', 'KeyO', 'KeyK', 'KeyL', 'KeyU', 'KeyP', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight']
       if (gameKeys.includes(event.code)) {
@@ -326,7 +364,7 @@ export default function SnesClient(props: { sessionId?: string }) {
         // Forward to Pusher if connected
         if (pusherRef.current && sessionId) {
           const pushUrl = `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=keyboard`
-          fetch(pushUrl, {
+          await fetch(pushUrl, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ type: 'button', control, state: 'down' })
@@ -335,7 +373,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       }
     }
 
-    const handleKeyUp = (event: KeyboardEvent) => {
+    const handleKeyUp = async (event: KeyboardEvent) => {
       const controlMap: Record<string, string> = {
         'KeyW': 'p1_up',
         'KeyS': 'p1_down', 
@@ -370,7 +408,7 @@ export default function SnesClient(props: { sessionId?: string }) {
         // Forward to Pusher if connected
         if (pusherRef.current && sessionId) {
           const pushUrl = `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=keyboard`
-          fetch(pushUrl, {
+          await fetch(pushUrl, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ type: 'button', control, state: 'up' })
@@ -388,6 +426,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       document.removeEventListener('keyup', handleKeyUp)
     }
   }, [mounted, sessionId])
+
 
   // Fullscreen handling
   useEffect(() => {
@@ -427,6 +466,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     ch.bind('hello', (data: any) => {
       // naive increment; in a real app track unique controller ids
       setControllerCount((n) => n + 1)
+      setHasControllerConnected(true)
       console.debug('[pusher] hello', data)
     })
     return () => {
@@ -483,6 +523,93 @@ export default function SnesClient(props: { sessionId?: string }) {
   const filteredLocal = roms.filter(r => matches(r.name))
   const filteredRemote = (remoteRoms || []).filter(r => matches(r.name) || matches(r.url))
 
+  // Controller navigation for game selection
+  useEffect(() => {
+    if (!mounted || isNavigatingGames) return
+
+    const handleGameNavigation = (event: KeyboardEvent) => {
+      // Only handle navigation when no game is active
+      if (activeRomLocal || activeRomRemote) return
+      
+      const currentList = selectedGameType === 'local' ? filteredLocal : filteredRemote
+      if (currentList.length === 0) return
+
+      let newIndex = selectedGameIndex
+      let newType = selectedGameType
+
+      switch (event.code) {
+        case 'ArrowUp':
+          event.preventDefault()
+          if (selectedGameType === 'remote' && selectedGameIndex === 0 && filteredLocal.length > 0) {
+            // Switch to local list, go to last item
+            newType = 'local'
+            newIndex = Math.max(0, filteredLocal.length - 1)
+          } else if (selectedGameIndex > 0) {
+            newIndex = selectedGameIndex - 1
+          }
+          break
+        case 'ArrowDown':
+          event.preventDefault()
+          if (selectedGameType === 'local' && selectedGameIndex === filteredLocal.length - 1 && filteredRemote.length > 0) {
+            // Switch to remote list, go to first item
+            newType = 'remote'
+            newIndex = 0
+          } else if (selectedGameIndex < currentList.length - 1) {
+            newIndex = selectedGameIndex + 1
+          }
+          break
+        case 'Enter':
+          event.preventDefault()
+          if (currentList.length > 0) {
+            const selectedGame = currentList[selectedGameIndex]
+            if (selectedGameType === 'local') {
+              setActiveRomLocal((selectedGame as StoredRomMeta).name)
+              setActiveRomRemote(null)
+            } else {
+              setActiveRomLocal(null)
+              setActiveRomRemote(selectedGame as RemoteRom)
+            }
+          }
+          break
+        case 'Escape':
+          event.preventDefault()
+          setIsNavigatingGames(false)
+          break
+        default:
+          return
+      }
+
+      if (newIndex !== selectedGameIndex || newType !== selectedGameType) {
+        setSelectedGameIndex(newIndex)
+        setSelectedGameType(newType)
+        setIsNavigatingGames(true)
+      }
+    }
+
+    document.addEventListener('keydown', handleGameNavigation)
+    return () => document.removeEventListener('keydown', handleGameNavigation)
+  }, [mounted, selectedGameIndex, selectedGameType, filteredLocal, filteredRemote, activeRomLocal, activeRomRemote, isNavigatingGames])
+
+  // Reset navigation when games change
+  useEffect(() => {
+    setSelectedGameIndex(0)
+    setSelectedGameType('local')
+  }, [filteredLocal, filteredRemote])
+
+  // Transition to game selection when controller connects
+  useEffect(() => {
+    if (hasControllerConnected && interfaceStage === 'qr') {
+      setInterfaceStage('gameSelection')
+    }
+  }, [hasControllerConnected, interfaceStage])
+
+  // Transition to emulator when game is selected
+  useEffect(() => {
+    if ((activeRomLocal || activeRomRemote) && interfaceStage === 'gameSelection') {
+      setInterfaceStage('emulator')
+    }
+  }, [activeRomLocal, activeRomRemote, interfaceStage])
+
   if (!mounted) {
     return (
       <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
@@ -501,6 +628,160 @@ export default function SnesClient(props: { sessionId?: string }) {
     )
   }
 
+  // QR Code Stage - Show QR codes for controller connection
+  if (interfaceStage === 'qr') {
+    return (
+      <div className="py-6 flex flex-col items-center justify-center min-h-[80vh] space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold">SNES Emulator</h1>
+          <p className="text-xl text-white/70">Connect your mobile controller to start</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
+          <div className="text-center space-y-4">
+            <div className="text-lg font-medium">Player 1</div>
+            {qr1 ? (
+              <img src={qr1} alt="Player 1 QR" className="mx-auto border-4 border-white/20 rounded-lg" />
+            ) : (
+              <div className="w-48 h-48 bg-white/10 rounded-lg flex items-center justify-center">
+                <div className="text-white/50">Loading QR...</div>
+              </div>
+            )}
+            <div className="text-sm text-white/60">Scan with your phone</div>
+          </div>
+          
+          <div className="text-center space-y-4">
+            <div className="text-lg font-medium">Player 2</div>
+            {qr2 ? (
+              <img src={qr2} alt="Player 2 QR" className="mx-auto border-4 border-white/20 rounded-lg" />
+            ) : (
+              <div className="w-48 h-48 bg-white/10 rounded-lg flex items-center justify-center">
+                <div className="text-white/50">Loading QR...</div>
+              </div>
+            )}
+            <div className="text-sm text-white/60">Scan with your phone</div>
+          </div>
+        </div>
+        
+        <div className="text-center space-y-2">
+          <div className="text-sm text-white/60">
+            Controllers connected: {controllerCount}
+          </div>
+          {controllerCount > 0 && (
+            <div className="text-green-400 font-medium">
+              Controller detected! Transitioning to game selection...
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Game Selection Stage - Show game tiles with controller navigation
+  if (interfaceStage === 'gameSelection') {
+    return (
+      <div className="py-6 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold">Select a Game</h1>
+          <p className="text-white/70">Use arrow keys or controller to navigate, Enter to select</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {/* Local Games */}
+          {filteredLocal.map((game, index) => {
+            const isSelected = selectedGameType === 'local' && selectedGameIndex === index
+            const screenshot = gameScreenshots[game.name]
+            return (
+              <div
+                key={game.name}
+                className={`relative rounded-lg border-2 transition-all cursor-pointer ${
+                  isSelected 
+                    ? 'border-primary bg-primary/20 scale-105' 
+                    : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+                }`}
+                onClick={() => {
+                  setActiveRomLocal(game.name)
+                  setActiveRomRemote(null)
+                }}
+              >
+                <div className="aspect-video bg-black rounded-t-lg overflow-hidden">
+                  {screenshot ? (
+                    <img 
+                      src={screenshot} 
+                      alt={`${prettifyName(game.name)} preview`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-4xl text-white/30">
+                      {prettifyName(game.name).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <div className="font-medium truncate">{prettifyName(game.name)}</div>
+                  <div className="text-xs text-white/50">{formatSize(game.size)}</div>
+                </div>
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          
+          {/* Remote Games */}
+          {filteredRemote.map((game, index) => {
+            const isSelected = selectedGameType === 'remote' && selectedGameIndex === index
+            const screenshot = gameScreenshots[game.name]
+            return (
+              <div
+                key={game.url}
+                className={`relative rounded-lg border-2 transition-all cursor-pointer ${
+                  isSelected 
+                    ? 'border-primary bg-primary/20 scale-105' 
+                    : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+                }`}
+                onClick={() => {
+                  setActiveRomLocal(null)
+                  setActiveRomRemote(game)
+                }}
+              >
+                <div className="aspect-video bg-black rounded-t-lg overflow-hidden">
+                  {screenshot ? (
+                    <img 
+                      src={screenshot} 
+                      alt={`${prettifyName(game.name)} preview`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-4xl text-white/30">
+                      {prettifyName(game.name).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <div className="font-medium truncate">{prettifyName(game.name)}</div>
+                  <div className="text-xs text-white/50">Remote</div>
+                </div>
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        
+        <div className="text-center text-sm text-white/60">
+          Controllers connected: {controllerCount} • Use arrow keys to navigate, Enter to select
+        </div>
+      </div>
+    )
+  }
+
+  // Emulator Stage - Full emulator interface
   return (
     <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
       {/* Left column: Lists (with search above local games) */}
@@ -522,15 +803,39 @@ export default function SnesClient(props: { sessionId?: string }) {
           </div>
           {roms.length === 0 && (<p className="text-sm text-white/50">No ROMs yet. Upload on the right.</p>)}
           <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
-            {filteredLocal.map((r) => (
-              <li key={r.name} className="p-3 flex items-center justify-between gap-3">
-                <button className="text-left flex-1 hover:text-primary" onClick={() => { setActiveRomRemote(null); setActiveRomLocal(r.name) }} title="Load in emulator">
-                  <div className="font-medium truncate">{prettifyName(r.name)}</div>
-                  <div className="text-xs text-white/50">{formatSize(r.size)} · {new Date(r.addedAt).toLocaleString()}</div>
-                </button>
-                <button className="text-xs text-white/60 hover:text-red-400" title="Delete from library" onClick={async () => { await deleteRom(r.name); setRoms(await listRoms()); if (activeRomLocal === r.name) setActiveRomLocal(null) }}>remove</button>
-              </li>
-            ))}
+            {filteredLocal.map((r, index) => {
+              const isSelected = selectedGameType === 'local' && selectedGameIndex === index
+              const screenshot = gameScreenshots[r.name]
+              return (
+                <li key={r.name} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
+                  <button 
+                    className="text-left flex-1 hover:text-primary flex items-center gap-3" 
+                    onClick={() => { setActiveRomRemote(null); setActiveRomLocal(r.name) }} 
+                    title="Load in emulator"
+                  >
+                    {/* Game preview thumbnail */}
+                    <div className="w-12 h-8 bg-black/50 rounded border border-white/10 flex-shrink-0 overflow-hidden">
+                      {screenshot ? (
+                        <img 
+                          src={screenshot} 
+                          alt={`${prettifyName(r.name)} preview`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-white/30">
+                          {prettifyName(r.name).charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{prettifyName(r.name)}</div>
+                      <div className="text-xs text-white/50">{formatSize(r.size)} · {new Date(r.addedAt).toLocaleString()}</div>
+                    </div>
+                  </button>
+                  <button className="text-xs text-white/60 hover:text-red-400" title="Delete from library" onClick={async () => { await deleteRom(r.name); setRoms(await listRoms()); if (activeRomLocal === r.name) setActiveRomLocal(null) }}>remove</button>
+                </li>
+              )
+            })}
           </ul>
         </div>
 
@@ -541,14 +846,38 @@ export default function SnesClient(props: { sessionId?: string }) {
             <h2 className="text-lg font-medium">Remote Library</h2>
             <p className="text-xs text-white/60">Files served from <code>/public/roms</code> or <code>/public/snes</code>.</p>
             <ul className="max-h-[30vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
-              {filteredRemote.map((r) => (
-                <li key={r.url} className="p-3 flex items-center justify-between gap-3">
-                  <button className="text-left flex-1 hover:text-primary" onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }} title="Stream in emulator">
-                    <div className="font-medium truncate">{prettifyName(r.name)}</div>
-                    <div className="text-xs text-white/50 truncate">{r.url}</div>
-                  </button>
-                </li>
-              ))}
+              {filteredRemote.map((r, index) => {
+                const isSelected = selectedGameType === 'remote' && selectedGameIndex === index
+                const screenshot = gameScreenshots[r.name]
+                return (
+                  <li key={r.url} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
+                    <button 
+                      className="text-left flex-1 hover:text-primary flex items-center gap-3" 
+                      onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }} 
+                      title="Stream in emulator"
+                    >
+                      {/* Game preview thumbnail */}
+                      <div className="w-12 h-8 bg-black/50 rounded border border-white/10 flex-shrink-0 overflow-hidden">
+                        {screenshot ? (
+                          <img 
+                            src={screenshot} 
+                            alt={`${prettifyName(r.name)} preview`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-white/30">
+                            {prettifyName(r.name).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{prettifyName(r.name)}</div>
+                        <div className="text-xs text-white/50 truncate">{r.url}</div>
+                      </div>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
@@ -588,28 +917,72 @@ export default function SnesClient(props: { sessionId?: string }) {
           {usePusher && pusherStatus === 'idle' && <span className="text-yellow-400"> (connecting...)</span>}
           · Controllers: {controllerCount}
         </div>
-        {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
+        {!activeRomLocal && !activeRomRemote && (
+          <div className="text-sm text-white/60">
+            {isNavigatingGames ? (
+              <div className="space-y-2">
+                <div>🎮 Controller Navigation Active</div>
+                <div className="text-xs text-white/50">
+                  Use ↑↓ arrows to navigate, Enter to select, Escape to exit
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>Select a ROM from the left to start playing.</div>
+                <div className="text-xs text-white/50">
+                  Use arrow keys to navigate with controller, or click to select
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Keyboard Controls Display */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-white/60">
-          <div className="space-y-1">
-            <div className="font-medium text-white/80">Player 1 (WASD)</div>
-            <div className="grid grid-cols-2 gap-1 text-[10px]">
-              <div>WASD - Move</div>
-              <div>XZCV - ABXY</div>
-              <div>QE - L/R</div>
-              <div>Enter/Shift - Start/Select</div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-white/60">
+            <div className="space-y-1">
+              <div className="font-medium text-white/80">Player 1 (WASD)</div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div>WASD - Move</div>
+                <div>XZCV - ABXY</div>
+                <div>QE - L/R</div>
+                <div>Enter/Shift - Start/Select</div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="font-medium text-white/80">Player 2 (Arrow Keys)</div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div>Arrows - Move</div>
+                <div>IKLO - ABXY</div>
+                <div>UP - L/R</div>
+                <div>Space/Shift - Start/Select</div>
+              </div>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="font-medium text-white/80">Player 2 (Arrow Keys)</div>
+          
+          {/* Game Navigation Controls */}
+          <div className="text-xs text-white/60">
+            <div className="font-medium text-white/80 mb-1">Game Selection</div>
             <div className="grid grid-cols-2 gap-1 text-[10px]">
-              <div>Arrows - Move</div>
-              <div>IKLO - ABXY</div>
-              <div>UP - L/R</div>
-              <div>Space/Shift - Start/Select</div>
+              <div>↑↓ - Navigate games</div>
+              <div>Enter - Select game</div>
+              <div>Escape - Exit navigation</div>
+              <div>Click - Select game</div>
             </div>
           </div>
+          
+          {/* Screenshot Controls */}
+          {activeRomLocal && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => captureGameScreenshot(activeRomLocal)}
+                className="px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
+                title="Capture screenshot of current game"
+              >
+                📸 Capture Screenshot
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>

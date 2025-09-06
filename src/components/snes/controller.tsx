@@ -134,51 +134,51 @@ export default function SnesController({ sessionId, playerId }: Props) {
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white touch-none">
       <div className="h-[100dvh] flex flex-col">
-        {/* Shoulder Buttons - Full width bars at top */}
+        {/* Shoulder Buttons - Full width bars at top - SNES Colors */}
         <div className="grid grid-cols-2 h-12">
-          <button className="bg-white/10 active:bg-white/20 text-sm font-bold flex items-center justify-center" {...bind('l')}>L</button>
-          <button className="bg-white/10 active:bg-white/20 text-sm font-bold flex items-center justify-center" {...bind('r')}>R</button>
+          <button className="bg-gray-400/80 active:bg-gray-400 text-sm font-bold flex items-center justify-center text-gray-800" {...bind('l')}>L</button>
+          <button className="bg-gray-400/80 active:bg-gray-400 text-sm font-bold flex items-center justify-center text-gray-800" {...bind('r')}>R</button>
         </div>
 
         {/* Main Controller Area - Takes up most of the screen */}
         <div className="flex-1 flex items-center justify-center px-6 py-4">
           <div className="w-full max-w-lg flex items-center justify-between">
-            {/* D-Pad - Left side - MUCH LARGER */}
+            {/* D-Pad - Left side - MUCH LARGER - SNES Colors */}
             <div className="flex flex-col items-center">
               <div className="grid grid-rows-3 grid-cols-3 gap-2 w-40 h-40">
                 <div />
-                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('up')}>↑</button>
+                <button className="rounded-xl bg-gray-300/80 active:bg-gray-300 text-2xl font-bold flex items-center justify-center text-gray-800" {...bind('up')}>↑</button>
                 <div />
-                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('left')}>←</button>
+                <button className="rounded-xl bg-gray-300/80 active:bg-gray-300 text-2xl font-bold flex items-center justify-center text-gray-800" {...bind('left')}>←</button>
                 <div />
-                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('right')}>→</button>
+                <button className="rounded-xl bg-gray-300/80 active:bg-gray-300 text-2xl font-bold flex items-center justify-center text-gray-800" {...bind('right')}>→</button>
                 <div />
-                <button className="rounded-xl bg-white/10 active:bg-white/20 text-2xl font-bold flex items-center justify-center" {...bind('down')}>↓</button>
+                <button className="rounded-xl bg-gray-300/80 active:bg-gray-300 text-2xl font-bold flex items-center justify-center text-gray-800" {...bind('down')}>↓</button>
                 <div />
               </div>
             </div>
 
-            {/* ABXY - Right side - MUCH LARGER */}
+            {/* ABXY - Right side - MUCH LARGER - SNES Colors */}
             <div className="flex flex-col items-center">
               <div className="grid grid-rows-3 grid-cols-3 gap-2 w-40 h-40">
                 <div />
-                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('x')}>X</button>
+                <button className="rounded-xl bg-purple-500/80 active:bg-purple-500 text-2xl font-bold flex items-center justify-center text-white" {...bind('x')}>X</button>
                 <div />
-                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('y')}>Y</button>
+                <button className="rounded-xl bg-yellow-500/80 active:bg-yellow-500 text-2xl font-bold flex items-center justify-center text-white" {...bind('y')}>Y</button>
                 <div />
-                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('a')}>A</button>
+                <button className="rounded-xl bg-green-500/80 active:bg-green-500 text-2xl font-bold flex items-center justify-center text-white" {...bind('a')}>A</button>
                 <div />
-                <button className="rounded-xl bg-primary/30 active:bg-primary text-2xl font-bold flex items-center justify-center" {...bind('b')}>B</button>
+                <button className="rounded-xl bg-red-500/80 active:bg-red-500 text-2xl font-bold flex items-center justify-center text-white" {...bind('b')}>B</button>
                 <div />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Start/Select - Small buttons at bottom */}
+        {/* Start/Select - Small buttons at bottom - SNES Colors */}
         <div className="grid grid-cols-2 h-10 px-4 pb-2">
-          <button className="bg-white/10 active:bg-white/20 text-xs font-medium flex items-center justify-center" {...bind('select')}>Select</button>
-          <button className="bg-white/10 active:bg-white/20 text-xs font-medium flex items-center justify-center" {...bind('start')}>Start</button>
+          <button className="bg-gray-500/80 active:bg-gray-500 text-xs font-medium flex items-center justify-center text-white" {...bind('select')}>Select</button>
+          <button className="bg-gray-500/80 active:bg-gray-500 text-xs font-medium flex items-center justify-center text-white" {...bind('start')}>Start</button>
         </div>
 
         {/* Status overlay - Small and unobtrusive */}

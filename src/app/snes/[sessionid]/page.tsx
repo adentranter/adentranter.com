@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function SnesSessionPage({ params }: any) {
-  const { sessionid } = params
+export default async function SnesSessionPage({ params }: any) {
+  const { sessionid } = await params
   return <SnesClient sessionId={sessionid} />
 }
 
