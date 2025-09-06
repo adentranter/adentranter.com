@@ -77,36 +77,26 @@ export default function SnesClient(props: { sessionId?: string }) {
     
     console.log('[Controller] Emitting:', { control, state, key, code, type })
     
-    // Try multiple ways to send the event to the emulator
-    const ev = new KeyboardEvent(type, { key, code, bubbles: true, cancelable: true })
+    // Create a single, clean keyboard event
+    const ev = new KeyboardEvent(type, { 
+      key, 
+      code, 
+      bubbles: true, 
+      cancelable: true,
+      composed: true
+    })
     
-    // Method 1: Dispatch to window
-    window.dispatchEvent(ev)
-    
-    // Method 2: Dispatch to document
-    document.dispatchEvent(ev)
-    
-    // Method 3: Dispatch to the emulator container
-    const emulatorContainer = document.getElementById('ejs-container')
-    if (emulatorContainer) {
-      emulatorContainer.dispatchEvent(ev)
-    }
-    
-    // Method 4: Try to focus the emulator iframe
-    const iframe = document.querySelector('iframe')
-    if (iframe && iframe.contentWindow) {
-      try {
-        iframe.contentWindow.dispatchEvent(ev)
-      } catch (e) {
-        console.log('[Controller] Could not dispatch to iframe:', e)
-      }
-    }
-    
-    // Method 5: Try to focus the emulator canvas
+    // Only dispatch to the focused emulator element
     const canvas = document.querySelector('canvas')
-    if (canvas) {
-      canvas.focus()
+    const iframe = document.querySelector('iframe')
+    
+    if (canvas && document.activeElement === canvas) {
       canvas.dispatchEvent(ev)
+    } else if (iframe && document.activeElement === iframe) {
+      iframe.dispatchEvent(ev)
+    } else {
+      // Fallback: dispatch to window but don't interfere with EmulatorJS
+      window.dispatchEvent(ev)
     }
   }
 
@@ -394,7 +384,22 @@ export default function SnesClient(props: { sessionId?: string }) {
       {/* Right column: Game view + bottom bar */}
       <div className="space-y-3">
         <div ref={gameViewRef} className="rounded-lg bg-black/50 border border-white/10 p-2 relative">
-          <div id="ejs-container" className="aspect-video w-full bg-black" />
+          <div 
+            id="ejs-container" 
+            className="aspect-video w-full bg-black cursor-pointer" 
+            onClick={() => {
+              // Focus the emulator when clicked
+              const canvas = document.querySelector('canvas')
+              const iframe = document.querySelector('iframe')
+              if (canvas) {
+                canvas.focus()
+                console.log('[Emulator] Focused canvas via click')
+              } else if (iframe) {
+                iframe.focus()
+                console.log('[Emulator] Focused iframe via click')
+              }
+            }}
+          />
           <button
             onClick={toggleFullscreen}
             className="absolute right-3 bottom-3 px-2.5 py-1.5 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
