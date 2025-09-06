@@ -46,8 +46,37 @@ export default function SnesClient(props: { sessionId?: string }) {
   const [controllerCount, setControllerCount] = useState<number>(0)
   const pusherRef = useRef<Pusher | null>(null)
 
-  // Shared key mapping + event emitter for WS/SSE
+  // Two-player key mapping for keyboard controls
   const keymap: Record<string, string> = {
+    // Player 1 controls (WASD + additional keys)
+    'p1_up': 'KeyW',
+    'p1_down': 'KeyS', 
+    'p1_left': 'KeyA',
+    'p1_right': 'KeyD',
+    'p1_a': 'KeyX',
+    'p1_b': 'KeyZ',
+    'p1_x': 'KeyC',
+    'p1_y': 'KeyV',
+    'p1_l': 'KeyQ',
+    'p1_r': 'KeyE',
+    'p1_start': 'Enter',
+    'p1_select': 'ShiftLeft',
+    
+    // Player 2 controls (Arrow keys + additional keys)
+    'p2_up': 'ArrowUp',
+    'p2_down': 'ArrowDown',
+    'p2_left': 'ArrowLeft', 
+    'p2_right': 'ArrowRight',
+    'p2_a': 'KeyI',
+    'p2_b': 'KeyO',
+    'p2_x': 'KeyK',
+    'p2_y': 'KeyL',
+    'p2_l': 'KeyU',
+    'p2_r': 'KeyP',
+    'p2_start': 'Space',
+    'p2_select': 'ShiftRight',
+    
+    // Legacy single-player mapping (for backward compatibility)
     up: 'ArrowUp',
     down: 'ArrowDown',
     left: 'ArrowLeft',
@@ -74,6 +103,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     else if (code.startsWith('Arrow')) key = code
     else if (code.startsWith('Shift')) key = 'Shift'
     else if (code === 'Enter') key = 'Enter'
+    else if (code === 'Space') key = ' '
     
     console.log('[Controller] Emitting:', { control, state, key, code, type })
     
@@ -172,6 +202,40 @@ export default function SnesClient(props: { sessionId?: string }) {
       w.EJS_pathtodata = 'https://cdn.emulatorjs.org/latest/data/'
       w.EJS_gameUrl = url
       w.EJS_mobileDevices = true
+      
+      // Configure for two-player keyboard support
+      w.EJS_controls = {
+        // Player 1 controls (WASD + additional keys)
+        'p1_up': 'KeyW',
+        'p1_down': 'KeyS',
+        'p1_left': 'KeyA', 
+        'p1_right': 'KeyD',
+        'p1_a': 'KeyX',
+        'p1_b': 'KeyZ',
+        'p1_x': 'KeyC',
+        'p1_y': 'KeyV',
+        'p1_l': 'KeyQ',
+        'p1_r': 'KeyE',
+        'p1_start': 'Enter',
+        'p1_select': 'ShiftLeft',
+        
+        // Player 2 controls (Arrow keys + additional keys)
+        'p2_up': 'ArrowUp',
+        'p2_down': 'ArrowDown',
+        'p2_left': 'ArrowLeft',
+        'p2_right': 'ArrowRight', 
+        'p2_a': 'KeyI',
+        'p2_b': 'KeyO',
+        'p2_x': 'KeyK',
+        'p2_y': 'KeyL',
+        'p2_l': 'KeyU',
+        'p2_r': 'KeyP',
+        'p2_start': 'Space',
+        'p2_select': 'ShiftRight'
+      }
+      
+      // Enable keyboard controls
+      w.EJS_keyboardControls = true
 
       const ensureLoader = () => new Promise<void>((resolve, reject) => {
         if ((window as any).EJS_Loaded) { resolve(); return }
@@ -215,6 +279,115 @@ export default function SnesClient(props: { sessionId?: string }) {
     })()
     return () => { cancelled = true }
   }, [activeRomLocal, activeRomRemote, mounted])
+
+  // Keyboard event listeners for two-player support
+  useEffect(() => {
+    if (!mounted) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent default behavior for game keys to avoid browser shortcuts
+      const gameKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyX', 'KeyZ', 'KeyC', 'KeyV', 'KeyQ', 'KeyE', 'KeyI', 'KeyO', 'KeyK', 'KeyL', 'KeyU', 'KeyP', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Space', 'ShiftLeft', 'ShiftRight']
+      if (gameKeys.includes(event.code)) {
+        event.preventDefault()
+      }
+      
+      // Map keyboard events to control names for Pusher forwarding
+      const controlMap: Record<string, string> = {
+        'KeyW': 'p1_up',
+        'KeyS': 'p1_down', 
+        'KeyA': 'p1_left',
+        'KeyD': 'p1_right',
+        'KeyX': 'p1_a',
+        'KeyZ': 'p1_b',
+        'KeyC': 'p1_x',
+        'KeyV': 'p1_y',
+        'KeyQ': 'p1_l',
+        'KeyE': 'p1_r',
+        'Enter': 'p1_start',
+        'ShiftLeft': 'p1_select',
+        
+        'ArrowUp': 'p2_up',
+        'ArrowDown': 'p2_down',
+        'ArrowLeft': 'p2_left',
+        'ArrowRight': 'p2_right',
+        'KeyI': 'p2_a',
+        'KeyO': 'p2_b',
+        'KeyK': 'p2_x',
+        'KeyL': 'p2_y',
+        'KeyU': 'p2_l',
+        'KeyP': 'p2_r',
+        'Space': 'p2_start',
+        'ShiftRight': 'p2_select'
+      }
+      
+      const control = controlMap[event.code]
+      if (control) {
+        console.log('[Keyboard] Player input:', { control, state: 'down', code: event.code })
+        // Forward to Pusher if connected
+        if (pusherRef.current && sessionId) {
+          const pushUrl = `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=keyboard`
+          fetch(pushUrl, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ type: 'button', control, state: 'down' })
+          }).catch(err => console.error('[Keyboard] Failed to send to Pusher:', err))
+        }
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const controlMap: Record<string, string> = {
+        'KeyW': 'p1_up',
+        'KeyS': 'p1_down', 
+        'KeyA': 'p1_left',
+        'KeyD': 'p1_right',
+        'KeyX': 'p1_a',
+        'KeyZ': 'p1_b',
+        'KeyC': 'p1_x',
+        'KeyV': 'p1_y',
+        'KeyQ': 'p1_l',
+        'KeyE': 'p1_r',
+        'Enter': 'p1_start',
+        'ShiftLeft': 'p1_select',
+        
+        'ArrowUp': 'p2_up',
+        'ArrowDown': 'p2_down',
+        'ArrowLeft': 'p2_left',
+        'ArrowRight': 'p2_right',
+        'KeyI': 'p2_a',
+        'KeyO': 'p2_b',
+        'KeyK': 'p2_x',
+        'KeyL': 'p2_y',
+        'KeyU': 'p2_l',
+        'KeyP': 'p2_r',
+        'Space': 'p2_start',
+        'ShiftRight': 'p2_select'
+      }
+      
+      const control = controlMap[event.code]
+      if (control) {
+        console.log('[Keyboard] Player input:', { control, state: 'up', code: event.code })
+        // Forward to Pusher if connected
+        if (pusherRef.current && sessionId) {
+          const pushUrl = `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=keyboard`
+          fetch(pushUrl, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ type: 'button', control, state: 'up' })
+          }).catch(err => console.error('[Keyboard] Failed to send to Pusher:', err))
+        }
+      }
+    }
+
+    // Add event listeners to the document to capture all keyboard input
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [mounted, sessionId])
 
   // Fullscreen handling
   useEffect(() => {
@@ -416,6 +589,29 @@ export default function SnesClient(props: { sessionId?: string }) {
           · Controllers: {controllerCount}
         </div>
         {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
+        
+        {/* Keyboard Controls Display */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-white/60">
+          <div className="space-y-1">
+            <div className="font-medium text-white/80">Player 1 (WASD)</div>
+            <div className="grid grid-cols-2 gap-1 text-[10px]">
+              <div>WASD - Move</div>
+              <div>XZCV - ABXY</div>
+              <div>QE - L/R</div>
+              <div>Enter/Shift - Start/Select</div>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="font-medium text-white/80">Player 2 (Arrow Keys)</div>
+            <div className="grid grid-cols-2 gap-1 text-[10px]">
+              <div>Arrows - Move</div>
+              <div>IKLO - ABXY</div>
+              <div>UP - L/R</div>
+              <div>Space/Shift - Start/Select</div>
+            </div>
+          </div>
+        </div>
+        
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 
         {/* Bottom row: QR codes + Upload */}
