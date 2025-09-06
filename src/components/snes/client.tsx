@@ -27,12 +27,29 @@ export default function SnesClient() {
   const gameViewRef = useRef<HTMLDivElement | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const shareBase = useMemo(() => {
-    if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/snes`
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const hostWsRef = useRef<WebSocket | null>(null)
+  const [wsStatus, setWsStatus] = useState<'idle' | 'connecting' | 'open' | 'closed' | 'error'>('idle')
+
+  // Generate a per-tab session id
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const sid = (crypto as any)?.randomUUID?.() || Math.random().toString(36).slice(2)
+    setSessionId(sid)
   }, [])
-  const qr1 = useMemo(() => `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${encodeURIComponent(shareBase + '?player=1')}`,[shareBase])
-  const qr2 = useMemo(() => `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${encodeURIComponent(shareBase + '?player=2')}`,[shareBase])
+
+  const controllerBase = useMemo(() => {
+    if (typeof window === 'undefined' || !sessionId) return ''
+    const envHost = process.env.NEXT_PUBLIC_SNES_HOST
+    const envProto = process.env.NEXT_PUBLIC_SNES_PROTOCOL
+    const envPort = process.env.NEXT_PUBLIC_SNES_PORT
+    const origin = envHost
+      ? `${envProto || (window.location.protocol.replace(':',''))}://${envHost}${envPort ? `:${envPort}` : ''}`
+      : window.location.origin
+    return `${origin}/snes/${encodeURIComponent(sessionId)}/player/`
+  }, [sessionId])
+  const qr1 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '1')}` : '', [controllerBase])
+  const qr2 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '2')}` : '', [controllerBase])
 
   useEffect(() => { setMounted(true); (async () => setRoms(await listRoms()))() }, [])
 
@@ -125,6 +142,60 @@ export default function SnesClient() {
     return () => document.removeEventListener('fullscreenchange', handler)
   }, [])
 
+  // Host WebSocket: receive controller inputs and synthesize keyboard events
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionId) return
+    setWsStatus('connecting')
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const url = `${proto}://${window.location.host}/api/snes/${encodeURIComponent(sessionId)}/ws?role=host`
+    const ws = new WebSocket(url)
+    hostWsRef.current = ws
+
+    const keymap: Record<string, string> = {
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      a: 'KeyX',
+      b: 'KeyZ',
+      x: 'KeyS',
+      y: 'KeyA',
+      l: 'KeyQ',
+      r: 'KeyW',
+      start: 'Enter',
+      select: 'ShiftRight',
+    }
+
+    function emit(control: string, state: 'down' | 'up') {
+      const code = keymap[control]
+      if (!code) return
+      const type = state === 'down' ? 'keydown' : 'keyup'
+      let key: string | undefined
+      if (code.startsWith('Key')) key = code.slice(3).toLowerCase()
+      else if (code.startsWith('Arrow')) key = code
+      else if (code.startsWith('Shift')) key = 'Shift'
+      else if (code === 'Enter') key = 'Enter'
+      const ev = new KeyboardEvent(type, { key, code, bubbles: true })
+      window.dispatchEvent(ev)
+      document.dispatchEvent(ev)
+    }
+
+    ws.addEventListener('message', (e) => {
+      let data: any
+      try { data = JSON.parse(e.data) } catch { return }
+      if (data?.type === 'input' && data?.input?.type === 'button') {
+        const { control, state } = data.input
+        if ((state === 'down' || state === 'up') && typeof control === 'string') emit(control, state)
+      }
+    })
+
+    ws.addEventListener('open', () => setWsStatus('open'))
+    ws.addEventListener('error', () => setWsStatus('error'))
+    ws.addEventListener('close', () => setWsStatus('closed'))
+
+    return () => { try { ws.close() } catch {} }
+  }, [sessionId])
+
   const toggleFullscreen = async () => {
     const el = gameViewRef.current
     if (!el) return
@@ -187,30 +258,11 @@ export default function SnesClient() {
           />
         </div>
 
-        {/* Remote Library (long list) */}
-        {!!remoteError && <p className="text-xs text-red-400">{remoteError}</p>}
-        {remoteRoms && remoteRoms.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-lg font-medium">Remote Library</h2>
-            <p className="text-xs text-white/60">Files served from <code>/public/roms</code> or <code>/public/snes</code>.</p>
-            <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
-              {filteredRemote.map((r) => (
-                <li key={r.url} className="p-3 flex items-center justify-between gap-3">
-                  <button className="text-left flex-1 hover:text-primary" onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }} title="Stream in emulator">
-                    <div className="font-medium truncate">{prettifyName(r.name)}</div>
-                    <div className="text-xs text-white/50 truncate">{r.url}</div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Local Library (shorter, under remote) */}
+        {/* Local Library */}
         <div className="space-y-2">
           <h2 className="text-lg font-medium">Your Library</h2>
           {roms.length === 0 && (<p className="text-sm text-white/50">No ROMs yet. Upload on the right.</p>)}
-          <ul className="max-h-[30vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
+          <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
             {filteredLocal.map((r) => (
               <li key={r.name} className="p-3 flex items-center justify-between gap-3">
                 <button className="text-left flex-1 hover:text-primary" onClick={() => { setActiveRomRemote(null); setActiveRomLocal(r.name) }} title="Load in emulator">
@@ -222,6 +274,25 @@ export default function SnesClient() {
             ))}
           </ul>
         </div>
+
+        {/* Remote Library */}
+        {!!remoteError && <p className="text-xs text-red-400">{remoteError}</p>}
+        {remoteRoms && remoteRoms.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-lg font-medium">Remote Library</h2>
+            <p className="text-xs text-white/60">Files served from <code>/public/roms</code> or <code>/public/snes</code>.</p>
+            <ul className="max-h-[30vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
+              {filteredRemote.map((r) => (
+                <li key={r.url} className="p-3 flex items-center justify-between gap-3">
+                  <button className="text-left flex-1 hover:text-primary" onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }} title="Stream in emulator">
+                    <div className="font-medium truncate">{prettifyName(r.name)}</div>
+                    <div className="text-xs text-white/50 truncate">{r.url}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Right column: Game view + bottom bar */}
@@ -237,6 +308,7 @@ export default function SnesClient() {
           </button>
         </div>
         {status && <div className="text-sm text-white/70">{status}</div>}
+        <div className="text-xs text-white/50">WS: {wsStatus}</div>
         {!activeRomLocal && !activeRomRemote && (<div className="text-sm text-white/60">Select a ROM from the left to start playing.</div>)}
         <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 
@@ -246,11 +318,25 @@ export default function SnesClient() {
           <div className="md:col-span-2 grid grid-cols-2 gap-3">
             <div className="rounded border border-white/10 p-2 text-center">
               <div className="text-xs mb-1">Player 1</div>
-              <img src={'/qr1.png'} onError={(e) => { (e.currentTarget as HTMLImageElement).src = qr1 }} alt="Player 1 QR" className="mx-auto" />
+              {qr1 ? (
+                <img src={qr1} alt="Player 1 QR" className="mx-auto" />
+              ) : (
+                <div className="text-xs text-white/50">Loading…</div>
+              )}
+              {controllerBase && (
+                <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '1'}</div>
+              )}
             </div>
             <div className="rounded border border-white/10 p-2 text-center">
               <div className="text-xs mb-1">Player 2</div>
-              <img src={'/qr2.png'} onError={(e) => { (e.currentTarget as HTMLImageElement).src = qr2 }} alt="Player 2 QR" className="mx-auto" />
+              {qr2 ? (
+                <img src={qr2} alt="Player 2 QR" className="mx-auto" />
+              ) : (
+                <div className="text-xs text-white/50">Loading…</div>
+              )}
+              {controllerBase && (
+                <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '2'}</div>
+              )}
             </div>
           </div>
           {/* Upload area */}
