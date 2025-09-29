@@ -52,7 +52,7 @@ export default function FireflyCursor() {
     const updateFirefly = (time: number) => {
       const idle = time - lastMove.time > IDLE_WANDER_DELAY
       const wanderT = time / 1600
-      const wanderStrength = idle ? 12 : 3
+      const wanderStrength = idle ? 6 : 1.5
 
       const desiredX = target.x + Math.cos(wanderT) * wanderStrength
       const desiredY = target.y + Math.sin(wanderT * 1.2) * (wanderStrength * 0.7)
@@ -66,9 +66,9 @@ export default function FireflyCursor() {
       const speedFactor = Math.min(velocity / 160, MAX_SPEED_SCALE)
       const flicker = 0.9 + Math.sin(time / 380) * 0.06
 
-      const scale = 0.6 + speedFactor * 0.08
-      const opacity = Math.min(0.4, 0.18 + speedFactor * 0.12)
-      const blur = 12 + speedFactor * 6
+      const scale = 0.3 + speedFactor * 0.04
+      const opacity = Math.min(0.2, 0.09 + speedFactor * 0.06)
+      const blur = 6 + speedFactor * 3
 
       firefly.style.transform = `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})`
       firefly.style.opacity = (opacity * flicker).toFixed(3)
@@ -151,12 +151,12 @@ export default function FireflyCursor() {
   return (
     <div
       ref={fireflyRef}
-      className="pointer-events-none fixed left-0 top-0 z-30 h-9 w-9 opacity-0"
+      className="pointer-events-none fixed left-0 top-0 z-30 h-5 w-5 opacity-0"
       aria-hidden="true"
     >
-      <div className="absolute inset-0 rounded-full bg-amber-200 opacity-70 blur-[26px]" />
-      <div className="absolute inset-[3px] rounded-full bg-amber-100 opacity-60 blur-lg" />
-      <div className="absolute inset-[6px] rounded-full bg-amber-50 opacity-80 shadow-[0_0_18px_rgba(255,235,185,0.55)]" />
+      <div className="absolute inset-0 rounded-full bg-amber-200 opacity-40 blur-[13px]" />
+      <div className="absolute inset-[3px] rounded-full bg-amber-100 opacity-30 blur-md" />
+      <div className="absolute inset-[6px] rounded-full bg-amber-50 opacity-40 shadow-[0_0_9px_rgba(255,235,185,0.45)]" />
     </div>
   )
 }
