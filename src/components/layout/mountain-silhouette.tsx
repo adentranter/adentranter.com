@@ -12,10 +12,20 @@ interface MountainSilhouetteProps {
 export default function MountainSilhouette({ className }: MountainSilhouetteProps) {
   return (
     <div
-      className={cn("pointer-events-none select-none absolute inset-x-0 bottom-0 z-0", className)}
-      style={{ height: "var(--mountain-h, 32vh)" }}
+      className={cn(
+        "pointer-events-none select-none absolute inset-x-0 bottom-0 z-0",
+        className,
+      )}
+      style={{
+        height: "var(--mountain-h, 32vh)",
+        transform: "translateX(calc(-1 * var(--scene-left-cut, 0px)))",
+      }}
     >
-      <svg viewBox="0 0 1600 400" preserveAspectRatio="none" className="w-full h-full">
+      <svg
+        viewBox="0 0 1600 400"
+        preserveAspectRatio="xMaxYMax slice"
+        className="w-full h-full"
+      >
         <g transform="translate(0 -40)">
           {/* BACK LAYER */}
           <path

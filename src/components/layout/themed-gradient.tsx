@@ -29,7 +29,10 @@ export default function ThemedGradient({
   if (!mounted) {
     return (
       <div
-        className={cn("relative w-full overflow-hidden", className)}
+        className={cn(
+          "relative w-full overflow-hidden [--scene-left-cut:clamp(220px,45vw,420px)] sm:[--scene-left-cut:0px]",
+          className,
+        )}
         style={{ "--mountain-h": "32vh" } as React.CSSProperties}
       >
         <SunsetGradient className={gradientClassName}>{children}</SunsetGradient>
@@ -45,7 +48,10 @@ export default function ThemedGradient({
 
   return (
     <div
-      className={cn("relative w-full overflow-hidden", className)}
+      className={cn(
+        "relative w-full overflow-hidden [--scene-left-cut:clamp(220px,45vw,420px)] sm:[--scene-left-cut:0px]",
+        className,
+      )}
       style={{ "--mountain-h": "32vh" } as React.CSSProperties}
     >
       <Wrapper className={gradientClassName}>{children}</Wrapper>

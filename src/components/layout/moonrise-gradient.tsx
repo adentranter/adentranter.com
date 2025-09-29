@@ -20,6 +20,8 @@ export default function MoonriseGradient({
       )}
       style={{
         minHeight: "100%",
+        // Shift the scene so mobile can crop the left edge without reflowing content.
+        transform: "translateX(calc(-1 * var(--scene-left-cut, 0px)))",
         // 4 stacked backgrounds, back (last) → front (first)
         backgroundImage: [
           // (1) Outermost moon glow ring - large white diffusion (off to the left)
@@ -69,4 +71,3 @@ export default function MoonriseGradient({
     </div>
   )
 }
-
