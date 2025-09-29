@@ -7,7 +7,7 @@ const nextConfig = {
     },
   },
   outputFileTracingIncludes: {
-    '/(app)/essays/[slug]/page': ['./src/app/essays/content/**/*'],
+    '/app/essays/[slug]': ['./src/app/essays/content/**/*'],
   },
   images: {
     remotePatterns: [
