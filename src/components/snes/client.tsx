@@ -53,7 +53,8 @@ export default function SnesClient(props: { sessionId?: string }) {
   const [isNavigatingGames, setIsNavigatingGames] = useState(false)
   
   // Multi-stage interface state
-  const [interfaceStage, setInterfaceStage] = useState<'qr' | 'gameSelection' | 'emulator'>('qr')
+  const [interfaceStage, setInterfaceStage] = useState<'landing' | 'qr' | 'gameSelection' | 'emulator'>('landing')
+  const [selectedInputMethod, setSelectedInputMethod] = useState<'keyboard' | 'phone' | null>(null)
   const [hasControllerConnected, setHasControllerConnected] = useState(false)
 
   // Two-player key mapping for keyboard controls
@@ -127,16 +128,37 @@ export default function SnesClient(props: { sessionId?: string }) {
     })
     
     // Only dispatch to the focused emulator element
-    const canvas = document.querySelector('canvas')
-    const iframe = document.querySelector('iframe')
-    
-    if (canvas && document.activeElement === canvas) {
-      canvas.dispatchEvent(ev)
-    } else if (iframe && document.activeElement === iframe) {
-      iframe.dispatchEvent(ev)
-    } else {
-      // Fallback: dispatch to window but don't interfere with EmulatorJS
-      window.dispatchEvent(ev)
+    const canvas = document.querySelector('#ejs-container canvas') as HTMLCanvasElement | null
+    const iframe = document.querySelector('#ejs-container iframe') as HTMLIFrameElement | null
+
+    let dispatched = false
+
+    if (canvas) {
+      try { canvas.focus() } catch {}
+      try { canvas.dispatchEvent(ev); dispatched = true } catch (error) {
+        console.warn('[Controller] Failed to dispatch to canvas', error)
+      }
+    }
+
+    if (iframe) {
+      try { iframe.focus() } catch {}
+      try { iframe.dispatchEvent(ev); dispatched = true } catch (error) {
+        console.warn('[Controller] Failed to dispatch to iframe element', error)
+      }
+      try {
+        iframe.contentWindow?.dispatchEvent(ev)
+        dispatched = true
+      } catch (error) {
+        console.warn('[Controller] Failed to dispatch to iframe window', error)
+      }
+    }
+
+    // Always mirror the event onto document/window to satisfy EmulatorJS listeners
+    try { window.dispatchEvent(ev) } catch (error) { console.warn('[Controller] Failed to dispatch to window', error) }
+    try { document.dispatchEvent(ev) } catch (error) { console.warn('[Controller] Failed to dispatch to document', error) }
+
+    if (!dispatched) {
+      console.warn('[Controller] No emulator target detected for event', { control, state })
     }
   }
 
@@ -610,6 +632,15 @@ export default function SnesClient(props: { sessionId?: string }) {
     }
   }, [activeRomLocal, activeRomRemote, interfaceStage])
 
+  const handleInputSelection = (method: 'keyboard' | 'phone') => {
+    setSelectedInputMethod(method)
+    if (method === 'keyboard') {
+      setInterfaceStage('gameSelection')
+    } else {
+      setInterfaceStage('qr')
+    }
+  }
+
   if (!mounted) {
     return (
       <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
@@ -623,6 +654,63 @@ export default function SnesClient(props: { sessionId?: string }) {
               <div className="text-white/50">Loading emulator...</div>
             </div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (interfaceStage === 'landing') {
+    return (
+      <div className="py-10 flex flex-col items-center gap-12 text-center">
+        <div className="space-y-4 max-w-3xl">
+          <h1 className="text-4xl font-bold">Play SNES together</h1>
+          <p className="text-lg text-white/70">
+            Choose how you want to control the game. You can play right here with a keyboard or connect
+            up to two phones as wireless controllers.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+          <button
+            className={`rounded-2xl border-2 p-8 transition-all ${
+              selectedInputMethod === 'keyboard'
+                ? 'border-primary bg-primary/20 scale-[1.01]'
+                : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+            }`}
+            onClick={() => handleInputSelection('keyboard')}
+          >
+            <div className="space-y-3">
+              <div className="text-sm uppercase tracking-wide text-white/60">Option 1</div>
+              <div className="text-2xl font-semibold">Use this keyboard</div>
+              <p className="text-sm text-white/70">
+                Start playing immediately. Keyboard controls support two players (WASD + Arrow keys) and work without a phone.
+              </p>
+              <div className="text-xs text-white/50">Best for quick local play</div>
+            </div>
+          </button>
+
+          <button
+            className={`rounded-2xl border-2 p-8 transition-all ${
+              selectedInputMethod === 'phone'
+                ? 'border-primary bg-primary/20 scale-[1.01]'
+                : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+            }`}
+            onClick={() => handleInputSelection('phone')}
+          >
+            <div className="space-y-3">
+              <div className="text-sm uppercase tracking-wide text-white/60">Option 2</div>
+              <div className="text-2xl font-semibold">Connect phones</div>
+              <p className="text-sm text-white/70">
+                Generate QR codes for players to scan. Each phone becomes a dedicated SNES controller with haptics.
+              </p>
+              <div className="text-xs text-white/50">Perfect for couch co-op</div>
+            </div>
+          </button>
+        </div>
+
+        <div className="text-sm text-white/50 space-y-1">
+          <div>Session code: {sessionId ?? 'Generating…'}</div>
+          <div>Pusher status: {usePusher ? pusherStatus : 'disabled'}</div>
         </div>
       </div>
     )
@@ -672,6 +760,12 @@ export default function SnesClient(props: { sessionId?: string }) {
               Controller detected! Transitioning to game selection...
             </div>
           )}
+          <button
+            onClick={() => { setInterfaceStage('landing'); setSelectedInputMethod(null) }}
+            className="mt-4 text-xs text-white/60 hover:text-white"
+          >
+            ← Choose a different control method
+          </button>
         </div>
       </div>
     )
@@ -683,9 +777,19 @@ export default function SnesClient(props: { sessionId?: string }) {
       <div className="py-6 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Select a Game</h1>
-          <p className="text-white/70">Use arrow keys or controller to navigate, Enter to select</p>
+          <p className="text-white/70">
+            {selectedInputMethod === 'keyboard'
+              ? 'Use the keyboard (WASD / Arrow keys) to navigate and press Enter to start.'
+              : 'Use the connected phone controller or arrow keys to navigate, Enter to select.'}
+          </p>
+          <button
+            onClick={() => { setInterfaceStage('landing'); setSelectedInputMethod(null) }}
+            className="text-xs text-white/60 hover:text-white"
+          >
+            ← Choose a different control method
+          </button>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
           {/* Local Games */}
           {filteredLocal.map((game, index) => {
