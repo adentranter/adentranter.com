@@ -101,10 +101,21 @@ export default function SnesController({ sessionId, playerId }: Props) {
     setStarted(true)
   }
 
+  const playerPrefix = useMemo(() => {
+    if (playerId === '1') return 'p1'
+    if (playerId === '2') return 'p2'
+    return null
+  }, [playerId])
+
+  const mapControl = (control: string) => {
+    if (control.startsWith('__')) return control
+    return playerPrefix ? `${playerPrefix}_${control}` : control
+  }
+
   function send(control: string, state: 'down' | 'up') {
-    const payload = { type: 'button', control, state }
+    const payload = { type: 'button', control: mapControl(control), state }
     console.log('[Controller] Sending:', payload, 'to:', pushUrl)
-    
+
     if (pushUrl) {
       fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
         .then(res => {
@@ -130,6 +141,11 @@ export default function SnesController({ sessionId, playerId }: Props) {
     onPointerCancel: () => send(control, 'up'),
     onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
   })
+
+  const triggerMenuToggle = () => {
+    send('__menu', 'down')
+    window.setTimeout(() => send('__menu', 'up'), 120)
+  }
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white touch-none">
@@ -185,11 +201,12 @@ export default function SnesController({ sessionId, playerId }: Props) {
         <div className="absolute top-14 left-2 text-xs text-white/60">
           <div>P{playerId} • {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
           {error && <div className="text-red-400">{error}</div>}
-          <button 
-            onClick={() => send('a', 'down')} 
-            className="mt-1 px-2 py-1 bg-red-500 text-white text-xs rounded"
+          <button
+            onClick={triggerMenuToggle}
+            className="mt-1 px-2 py-1 rounded border border-white/20 bg-white/10 text-white text-xs"
+            title="Toggle the host menu for saves and library"
           >
-            Test A
+            Menu
           </button>
         </div>
       </div>
