@@ -142,6 +142,11 @@ export default function SnesController({ sessionId, playerId }: Props) {
     onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
   })
 
+  const triggerMenuToggle = () => {
+    send('__menu', 'down')
+    window.setTimeout(() => send('__menu', 'up'), 120)
+  }
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-white touch-none">
       <div className="h-[100dvh] flex flex-col">
@@ -196,11 +201,12 @@ export default function SnesController({ sessionId, playerId }: Props) {
         <div className="absolute top-14 left-2 text-xs text-white/60">
           <div>P{playerId} • {connected ? <span className="text-emerald-400">ready</span> : <span className="text-white/60">connecting…</span>}</div>
           {error && <div className="text-red-400">{error}</div>}
-          <button 
-            onClick={() => send('a', 'down')} 
-            className="mt-1 px-2 py-1 bg-red-500 text-white text-xs rounded"
+          <button
+            onClick={triggerMenuToggle}
+            className="mt-1 px-2 py-1 rounded border border-white/20 bg-white/10 text-white text-xs"
+            title="Toggle the host menu for saves and library"
           >
-            Test A
+            Menu
           </button>
         </div>
       </div>

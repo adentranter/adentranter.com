@@ -1,10 +1,30 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Pusher from 'pusher-js'
 import { deleteRom, getRom, listRoms, putRom, type StoredRomMeta } from "@/lib/idb-roms"
 
 type RemoteRom = { name: string; url: string }
+
+type EmulatorMethodCandidate = { name: string; args?: any[] }
+
+type GlobalAction = 'back' | 'save' | 'load'
+
+const SAVE_METHOD_CANDIDATES: EmulatorMethodCandidate[] = [
+  { name: 'saveState' },
+  { name: 'saveStateSlot', args: [0] },
+  { name: 'saveStateFile' },
+  { name: 'saveStateToLocalStorage' },
+  { name: 'quickSave' }
+]
+
+const LOAD_METHOD_CANDIDATES: EmulatorMethodCandidate[] = [
+  { name: 'loadState' },
+  { name: 'loadStateSlot', args: [0] },
+  { name: 'loadStateFile' },
+  { name: 'loadStateFromLocalStorage' },
+  { name: 'quickLoad' }
+]
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -56,6 +76,33 @@ export default function SnesClient(props: { sessionId?: string }) {
   const [interfaceStage, setInterfaceStage] = useState<'landing' | 'qr' | 'gameSelection' | 'emulator'>('landing')
   const [selectedInputMethod, setSelectedInputMethod] = useState<'keyboard' | 'phone' | null>(null)
   const [hasControllerConnected, setHasControllerConnected] = useState(false)
+  const [landingSelection, setLandingSelection] = useState<'keyboard' | 'phone'>('keyboard')
+
+  const [globalMenuOpen, setGlobalMenuOpen] = useState(false)
+  const [globalMenuIndex, setGlobalMenuIndex] = useState(0)
+  const [globalMenuStatus, setGlobalMenuStatus] = useState<string | null>(null)
+  const [globalActionBusy, setGlobalActionBusy] = useState(false)
+
+  const globalMenuOptions = useMemo(
+    () => [
+      {
+        id: 'back' as GlobalAction,
+        label: 'Back to game library',
+        description: 'Close the emulator and return to the save/game picker.'
+      },
+      {
+        id: 'save' as GlobalAction,
+        label: 'Save game state',
+        description: 'Snapshot progress to this browser so you can continue later.'
+      },
+      {
+        id: 'load' as GlobalAction,
+        label: 'Load last save',
+        description: 'Restore the most recent save state captured on this device.'
+      }
+    ],
+    []
+  )
 
   // Two-player key mapping for keyboard controls
   const keymap: Record<string, string> = {
@@ -103,6 +150,20 @@ export default function SnesClient(props: { sessionId?: string }) {
   }
 
   function emit(control: string, state: 'down' | 'up') {
+    if (control === '__hello') return
+    if (control === '__menu') {
+      if (state === 'down') {
+        setGlobalMenuOpen(prev => {
+          const next = !prev
+          if (next) {
+            setGlobalMenuIndex(0)
+            setGlobalMenuStatus(null)
+          }
+          return next
+        })
+      }
+      return
+    }
     const code = keymap[control]
     if (!code) {
       console.warn('[Controller] Unknown control:', control)
@@ -208,6 +269,19 @@ export default function SnesClient(props: { sessionId?: string }) {
   const qr2 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '2')}` : '', [controllerBase])
 
   useEffect(() => { setMounted(true); (async () => setRoms(await listRoms()))() }, [])
+
+  useEffect(() => {
+    if (interfaceStage === 'landing') {
+      setLandingSelection(selectedInputMethod ?? 'keyboard')
+    }
+  }, [interfaceStage, selectedInputMethod])
+
+  useEffect(() => {
+    if (interfaceStage !== 'emulator' && globalMenuOpen) {
+      setGlobalMenuOpen(false)
+      setGlobalMenuStatus(null)
+    }
+  }, [interfaceStage, globalMenuOpen])
 
   // Fetch remote ROM manifest (replaces inline component)
   useEffect(() => {
@@ -450,6 +524,159 @@ export default function SnesClient(props: { sessionId?: string }) {
   }, [mounted, sessionId])
 
 
+  useEffect(() => {
+    if (!mounted || interfaceStage !== 'landing') return
+
+    const handleLandingKeys = (event: KeyboardEvent) => {
+      const { code } = event
+      if (code === 'ArrowLeft' || code === 'ArrowUp') {
+        event.preventDefault()
+        setLandingSelection('keyboard')
+        return
+      }
+      if (code === 'ArrowRight' || code === 'ArrowDown') {
+        event.preventDefault()
+        setLandingSelection('phone')
+        return
+      }
+      if (code === 'Enter' || code === 'Space' || code === 'KeyZ' || code === 'KeyO' || code === 'KeyB') {
+        event.preventDefault()
+        handleInputSelection(landingSelection)
+      }
+    }
+
+    document.addEventListener('keydown', handleLandingKeys)
+    return () => document.removeEventListener('keydown', handleLandingKeys)
+  }, [mounted, interfaceStage, landingSelection])
+
+  const callEmulatorMethod = useCallback(async (candidates: EmulatorMethodCandidate[]) => {
+    if (typeof window === 'undefined') {
+      return { ok: false as const, reason: 'no-window' as const }
+    }
+    const emulator = (window as any).EJS_emulator
+    if (!emulator) {
+      return { ok: false as const, reason: 'not-ready' as const }
+    }
+
+    for (const candidate of candidates) {
+      const fn = emulator?.[candidate.name]
+      if (typeof fn === 'function') {
+        try {
+          const result = fn.apply(emulator, candidate.args ?? [])
+          if (result instanceof Promise) {
+            await result
+          }
+          return { ok: true as const, method: candidate.name }
+        } catch (error) {
+          console.error(`[Emulator] ${candidate.name} failed`, error)
+          return { ok: false as const, reason: 'error' as const, error }
+        }
+      }
+    }
+
+    return { ok: false as const, reason: 'unavailable' as const }
+  }, [])
+
+  const handleGlobalAction = useCallback(async (action: GlobalAction) => {
+    if (action === 'back') {
+      setGlobalMenuOpen(false)
+      setGlobalMenuStatus(null)
+      setActiveRomLocal(null)
+      setActiveRomRemote(null)
+      setInterfaceStage('gameSelection')
+      setStatus('Returned to the game library.')
+      return
+    }
+
+    const isSave = action === 'save'
+    setGlobalActionBusy(true)
+    setGlobalMenuStatus(isSave ? 'Saving game…' : 'Loading game…')
+    const result = await callEmulatorMethod(isSave ? SAVE_METHOD_CANDIDATES : LOAD_METHOD_CANDIDATES)
+    setGlobalActionBusy(false)
+
+    if (result.ok) {
+      const message = isSave ? 'Game saved to this browser.' : 'Loaded the most recent save.'
+      setStatus(message)
+      setGlobalMenuStatus(message)
+      setGlobalMenuOpen(false)
+      return
+    }
+
+    let errorMessage = isSave ? 'Unable to save game.' : 'Unable to load game.'
+    if (result.reason === 'no-window') {
+      errorMessage = 'Saves are only available in the browser.'
+    } else if (result.reason === 'not-ready') {
+      errorMessage = 'Emulator has not finished loading yet.'
+    } else if (result.reason === 'unavailable') {
+      errorMessage = 'This emulator build does not expose save/load controls.'
+    } else if (result.reason === 'error') {
+      errorMessage = 'Save system reported an internal error. Check console logs.'
+    }
+    setStatus(errorMessage)
+    setGlobalMenuStatus(errorMessage)
+  }, [callEmulatorMethod])
+
+  useEffect(() => {
+    if (!globalMenuOpen) return
+
+    const navCodes = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+    const confirmCodes = new Set(['Enter', 'Space', 'KeyZ', 'KeyO', 'KeyB'])
+    const cancelCodes = new Set(['Escape', 'Backspace'])
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const { code } = event
+      if (!(navCodes.has(code) || confirmCodes.has(code) || cancelCodes.has(code))) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+
+      if (navCodes.has(code)) {
+        setGlobalMenuIndex((index) => {
+          const last = globalMenuOptions.length - 1
+          if (code === 'ArrowUp' || code === 'ArrowLeft') {
+            return index === 0 ? last : index - 1
+          }
+          return index === last ? 0 : index + 1
+        })
+        return
+      }
+
+      if (cancelCodes.has(code)) {
+        setGlobalMenuOpen(false)
+        setGlobalMenuStatus(null)
+        return
+      }
+
+      if (confirmCodes.has(code)) {
+        const option = globalMenuOptions[globalMenuIndex]
+        if (option) {
+          handleGlobalAction(option.id)
+        }
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const { code } = event
+      if (navCodes.has(code) || confirmCodes.has(code) || cancelCodes.has(code)) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('keyup', handleKeyUp, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('keyup', handleKeyUp, true)
+    }
+  }, [globalMenuOpen, globalMenuIndex, globalMenuOptions, handleGlobalAction])
+
+  useEffect(() => {
+    if (!globalMenuOpen) return
+    setGlobalMenuIndex(0)
+    setGlobalMenuStatus(null)
+  }, [globalMenuOpen])
+
+
   // Fullscreen handling
   useEffect(() => {
     const handler = () => {
@@ -633,6 +860,8 @@ export default function SnesClient(props: { sessionId?: string }) {
   }, [activeRomLocal, activeRomRemote, interfaceStage])
 
   const handleInputSelection = (method: 'keyboard' | 'phone') => {
+
+    setLandingSelection(method)
     setSelectedInputMethod(method)
     if (method === 'keyboard') {
       setInterfaceStage('gameSelection')
@@ -673,7 +902,8 @@ export default function SnesClient(props: { sessionId?: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
           <button
             className={`rounded-2xl border-2 p-8 transition-all ${
-              selectedInputMethod === 'keyboard'
+              landingSelection === 'keyboard'
+
                 ? 'border-primary bg-primary/20 scale-[1.01]'
                 : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
             }`}
@@ -691,7 +921,9 @@ export default function SnesClient(props: { sessionId?: string }) {
 
           <button
             className={`rounded-2xl border-2 p-8 transition-all ${
-              selectedInputMethod === 'phone'
+
+              landingSelection === 'phone'
+
                 ? 'border-primary bg-primary/20 scale-[1.01]'
                 : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
             }`}
@@ -887,84 +1119,86 @@ export default function SnesClient(props: { sessionId?: string }) {
 
   // Emulator Stage - Full emulator interface
   return (
-    <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
-      {/* Left column: Lists (with search above local games) */}
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">SNES</h1>
-
-        {/* Local Library */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">Your Library</h2>
-          {/* Search above uploaded games */}
-          <div>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search games…"
-              className="w-full rounded-md bg-white/10 px-3 py-2 text-sm outline-none"
-            />
-          </div>
-          {roms.length === 0 && (<p className="text-sm text-white/50">No ROMs yet. Upload on the right.</p>)}
-          <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
-            {filteredLocal.map((r, index) => {
-              const isSelected = selectedGameType === 'local' && selectedGameIndex === index
-              const screenshot = gameScreenshots[r.name]
-              return (
-                <li key={r.name} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
-                  <button 
-                    className="text-left flex-1 hover:text-primary flex items-center gap-3" 
-                    onClick={() => { setActiveRomRemote(null); setActiveRomLocal(r.name) }} 
-                    title="Load in emulator"
+    <div className="relative">
+      {globalMenuOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-black/85 p-6 shadow-xl">
+            <button
+              onClick={() => { setGlobalMenuOpen(false); setGlobalMenuStatus(null) }}
+              className="absolute right-4 top-4 text-xs text-white/60 hover:text-white"
+            >
+              Close
+            </button>
+            <div className="space-y-1 text-center">
+              <h2 className="text-xl font-semibold">Controller menu</h2>
+              <p className="text-sm text-white/70">
+                Use arrow keys (or the phone D-pad) to highlight an option, then press B/Enter to confirm.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {globalMenuOptions.map((option, index) => {
+                const isSelected = index === globalMenuIndex
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => handleGlobalAction(option.id)}
+                    disabled={globalActionBusy}
+                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                      isSelected
+                        ? 'border-primary bg-primary/20 text-white'
+                        : 'border-white/15 bg-white/5 text-white/80 hover:border-white/40 hover:bg-white/10'
+                    } ${globalActionBusy ? 'opacity-60 cursor-wait' : ''}`}
                   >
-                    {/* Game preview thumbnail */}
-                    <div className="w-12 h-8 bg-black/50 rounded border border-white/10 flex-shrink-0 overflow-hidden">
-                      {screenshot ? (
-                        <img 
-                          src={screenshot} 
-                          alt={`${prettifyName(r.name)} preview`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-white/30">
-                          {prettifyName(r.name).charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{prettifyName(r.name)}</div>
-                      <div className="text-xs text-white/50">{formatSize(r.size)} · {new Date(r.addedAt).toLocaleString()}</div>
-                    </div>
+                    <div className="font-medium">{option.label}</div>
+                    <div className="text-xs text-white/60">{option.description}</div>
+                    {isSelected && <div className="mt-1 text-[10px] uppercase text-primary/80">Selected</div>}
                   </button>
-                  <button className="text-xs text-white/60 hover:text-red-400" title="Delete from library" onClick={async () => { await deleteRom(r.name); setRoms(await listRoms()); if (activeRomLocal === r.name) setActiveRomLocal(null) }}>remove</button>
-                </li>
-              )
-            })}
-          </ul>
+                )
+              })}
+            </div>
+            {globalMenuStatus && (
+              <div className="text-center text-xs text-white/70">{globalMenuStatus}</div>
+            )}
+            <div className="text-center text-[11px] text-white/40">Press Menu/Select again to close this panel.</div>
+          </div>
         </div>
+      )}
 
-        {/* Remote Library */}
-        {!!remoteError && <p className="text-xs text-red-400">{remoteError}</p>}
-        {remoteRoms && remoteRoms.length > 0 && (
+      <div className="py-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        {/* Left column: Lists (with search above local games) */}
+        <div className="space-y-4">
+          <h1 className="text-2xl font-semibold">SNES</h1>
+
+          {/* Local Library */}
           <div className="space-y-2">
-            <h2 className="text-lg font-medium">Remote Library</h2>
-            <p className="text-xs text-white/60">Files served from <code>/public/roms</code> or <code>/public/snes</code>.</p>
-            <ul className="max-h-[30vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
-              {filteredRemote.map((r, index) => {
-                const isSelected = selectedGameType === 'remote' && selectedGameIndex === index
+            <h2 className="text-lg font-medium">Your Library</h2>
+            {/* Search above uploaded games */}
+            <div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search games…"
+                className="w-full rounded-md bg-white/10 px-3 py-2 text-sm outline-none"
+              />
+            </div>
+            {roms.length === 0 && (<p className="text-sm text-white/50">No ROMs yet. Upload on the right.</p>)}
+            <ul className="min-h-[80vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
+              {filteredLocal.map((r, index) => {
+                const isSelected = selectedGameType === 'local' && selectedGameIndex === index
                 const screenshot = gameScreenshots[r.name]
                 return (
-                  <li key={r.url} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
-                    <button 
-                      className="text-left flex-1 hover:text-primary flex items-center gap-3" 
-                      onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }} 
-                      title="Stream in emulator"
+                  <li key={r.name} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
+                    <button
+                      className="text-left flex-1 hover:text-primary flex items-center gap-3"
+                      onClick={() => { setActiveRomRemote(null); setActiveRomLocal(r.name) }}
+                      title="Load in emulator"
                     >
                       {/* Game preview thumbnail */}
                       <div className="w-12 h-8 bg-black/50 rounded border border-white/10 flex-shrink-0 overflow-hidden">
                         {screenshot ? (
-                          <img 
-                            src={screenshot} 
+                          <img
+                            src={screenshot}
                             alt={`${prettifyName(r.name)} preview`}
                             className="w-full h-full object-cover"
                           />
@@ -976,158 +1210,217 @@ export default function SnesClient(props: { sessionId?: string }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{prettifyName(r.name)}</div>
-                        <div className="text-xs text-white/50 truncate">{r.url}</div>
+                        <div className="text-xs text-white/50">{formatSize(r.size)} · {new Date(r.addedAt).toLocaleString()}</div>
                       </div>
                     </button>
+                    <button className="text-xs text-white/60 hover:text-red-400" title="Delete from library" onClick={async () => { await deleteRom(r.name); setRoms(await listRoms()); if (activeRomLocal === r.name) setActiveRomLocal(null) }}>remove</button>
                   </li>
                 )
               })}
             </ul>
           </div>
-        )}
-      </div>
 
-      {/* Right column: Game view + bottom bar */}
-      <div className="space-y-3">
-        <div ref={gameViewRef} className="rounded-lg bg-black/50 border border-white/10 p-2 relative">
-          <div 
-            id="ejs-container" 
-            className="aspect-video w-full bg-black cursor-pointer" 
-            onClick={() => {
-              // Focus the emulator when clicked
-              const canvas = document.querySelector('canvas')
-              const iframe = document.querySelector('iframe')
-              if (canvas) {
-                canvas.focus()
-                console.log('[Emulator] Focused canvas via click')
-              } else if (iframe) {
-                iframe.focus()
-                console.log('[Emulator] Focused iframe via click')
-              }
-            }}
-          />
-          <button
-            onClick={toggleFullscreen}
-            className="absolute right-3 bottom-3 px-2.5 py-1.5 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-          >
-            {isFullscreen ? 'Exit FS' : 'FS'}
-          </button>
-        </div>
-        {status && <div className="text-sm text-white/70">{status}</div>}
-        <div className="text-xs text-white/50">
-          Pusher: {pusherStatus}
-          {!usePusher && <span className="text-red-400"> (env vars missing)</span>}
-          {usePusher && pusherStatus === 'idle' && <span className="text-yellow-400"> (connecting...)</span>}
-          · Controllers: {controllerCount}
-        </div>
-        {!activeRomLocal && !activeRomRemote && (
-          <div className="text-sm text-white/60">
-            {isNavigatingGames ? (
-              <div className="space-y-2">
-                <div>🎮 Controller Navigation Active</div>
-                <div className="text-xs text-white/50">
-                  Use ↑↓ arrows to navigate, Enter to select, Escape to exit
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div>Select a ROM from the left to start playing.</div>
-                <div className="text-xs text-white/50">
-                  Use arrow keys to navigate with controller, or click to select
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Keyboard Controls Display */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-white/60">
-            <div className="space-y-1">
-              <div className="font-medium text-white/80">Player 1 (WASD)</div>
-              <div className="grid grid-cols-2 gap-1 text-[10px]">
-                <div>WASD - Move</div>
-                <div>XZCV - ABXY</div>
-                <div>QE - L/R</div>
-                <div>Enter/Shift - Start/Select</div>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="font-medium text-white/80">Player 2 (Arrow Keys)</div>
-              <div className="grid grid-cols-2 gap-1 text-[10px]">
-                <div>Arrows - Move</div>
-                <div>IKLO - ABXY</div>
-                <div>UP - L/R</div>
-                <div>Space/Shift - Start/Select</div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Game Navigation Controls */}
-          <div className="text-xs text-white/60">
-            <div className="font-medium text-white/80 mb-1">Game Selection</div>
-            <div className="grid grid-cols-2 gap-1 text-[10px]">
-              <div>↑↓ - Navigate games</div>
-              <div>Enter - Select game</div>
-              <div>Escape - Exit navigation</div>
-              <div>Click - Select game</div>
-            </div>
-          </div>
-          
-          {/* Screenshot Controls */}
-          {activeRomLocal && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => captureGameScreenshot(activeRomLocal)}
-                className="px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
-                title="Capture screenshot of current game"
-              >
-                📸 Capture Screenshot
-              </button>
+          {/* Remote Library */}
+          {!!remoteError && <p className="text-xs text-red-400">{remoteError}</p>}
+          {remoteRoms && remoteRoms.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-lg font-medium">Remote Library</h2>
+              <p className="text-xs text-white/60">Files served from <code>/public/roms</code> or <code>/public/snes</code>.</p>
+              <ul className="max-h-[30vh] overflow-auto divide-y divide-white/10 rounded border border-white/10">
+                {filteredRemote.map((r, index) => {
+                  const isSelected = selectedGameType === 'remote' && selectedGameIndex === index
+                  const screenshot = gameScreenshots[r.name]
+                  return (
+                    <li key={r.url} className={`p-3 flex items-center justify-between gap-3 transition-colors ${isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-white/5'}`}>
+                      <button
+                        className="text-left flex-1 hover:text-primary flex items-center gap-3"
+                        onClick={() => { setActiveRomLocal(null); setActiveRomRemote(r) }}
+                        title="Stream in emulator"
+                      >
+                        {/* Game preview thumbnail */}
+                        <div className="w-12 h-8 bg-black/50 rounded border border-white/10 flex-shrink-0 overflow-hidden">
+                          {screenshot ? (
+                            <img
+                              src={screenshot}
+                              alt={`${prettifyName(r.name)} preview`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs text-white/30">
+                              {prettifyName(r.name).charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{prettifyName(r.name)}</div>
+                          <div className="text-xs text-white/50 truncate">{r.url}</div>
+                        </div>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           )}
         </div>
-        
-        <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
 
-        {/* Bottom row: QR codes + Upload */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start pt-2 border-t border-white/10">
-          {/* QR codes (two columns on md) */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-3">
-            <div className="rounded border border-white/10 p-2 text-center">
-              <div className="text-xs mb-1">Player 1</div>
-              {qr1 ? (
-                <img src={qr1} alt="Player 1 QR" className="mx-auto" />
-              ) : (
-                <div className="text-xs text-white/50">Loading…</div>
-              )}
-              {controllerBase && (
-                <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '1'}</div>
-              )}
-            </div>
-            <div className="rounded border border-white/10 p-2 text-center">
-              <div className="text-xs mb-1">Player 2</div>
-              {qr2 ? (
-                <img src={qr2} alt="Player 2 QR" className="mx-auto" />
-              ) : (
-                <div className="text-xs text-white/50">Loading…</div>
-              )}
-              {controllerBase && (
-                <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '2'}</div>
-              )}
-            </div>
+        {/* Right column: Game view + bottom bar */}
+        <div className="space-y-3">
+          <div ref={gameViewRef} className="rounded-lg bg-black/50 border border-white/10 p-2 relative">
+            <div
+              id="ejs-container"
+              className="aspect-video w-full bg-black cursor-pointer"
+              onClick={() => {
+                // Focus the emulator when clicked
+                const canvas = document.querySelector('canvas')
+                const iframe = document.querySelector('iframe')
+                if (canvas) {
+                  canvas.focus()
+                  console.log('[Emulator] Focused canvas via click')
+                } else if (iframe) {
+                  iframe.focus()
+                  console.log('[Emulator] Focused iframe via click')
+                }
+              }}
+            />
+            <button
+              onClick={toggleFullscreen}
+              className="absolute right-3 bottom-3 px-2.5 py-1.5 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? 'Exit FS' : 'FS'}
+            </button>
+            <button
+              onClick={() =>
+                setGlobalMenuOpen(prev => {
+                  const next = !prev
+                  if (next) {
+                    setGlobalMenuIndex(0)
+                    setGlobalMenuStatus(null)
+                  }
+                  return next
+                })
+              }
+              className="absolute left-3 bottom-3 px-2.5 py-1.5 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
+            >
+              Menu
+            </button>
           </div>
-          {/* Upload area */}
-          <div
-            className="rounded-md border border-dashed border-white/20 p-4 text-sm text-white/70 hover:border-white/40 transition-colors"
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }}
-            onDrop={onDrop}
-          >
-            <p className="mb-2">Drag and drop ROMs here</p>
-            <button className="px-3 py-1.5 rounded bg-primary/20 hover:bg-primary text-white" onClick={() => fileInputRef.current?.click()} disabled={loading}>{loading ? 'Adding…' : 'Add ROMs'}</button>
-            <input ref={fileInputRef} type="file" accept=".smc,.sfc,.fig,.swc,.zip,.7z,application/zip,application/x-7z-compressed,application/octet-stream" multiple className="hidden" onChange={(e) => handleFiles(e.currentTarget.files)} />
-            <p className="mt-2 text-xs text-white/50">Stored locally via IndexedDB; progress stays in this browser.</p>
+          {status && <div className="text-sm text-white/70">{status}</div>}
+          <div className="text-xs text-white/50">
+            Pusher: {pusherStatus}
+            {!usePusher && <span className="text-red-400"> (env vars missing)</span>}
+            {usePusher && pusherStatus === 'idle' && <span className="text-yellow-400"> (connecting...)</span>}
+            · Controllers: {controllerCount}
+          </div>
+          {!activeRomLocal && !activeRomRemote && (
+            <div className="text-sm text-white/60">
+              {isNavigatingGames ? (
+                <div className="space-y-2">
+                  <div>🎮 Controller Navigation Active</div>
+                  <div className="text-xs text-white/50">
+                    Use ↑↓ arrows to navigate, Enter to select, Escape to exit
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div>Select a ROM from the left to start playing.</div>
+                  <div className="text-xs text-white/50">
+                    Use arrow keys to navigate with controller, or click to select
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Keyboard Controls Display */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-white/60">
+              <div className="space-y-1">
+                <div className="font-medium text-white/80">Player 1 (WASD)</div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  <div>WASD - Move</div>
+                  <div>XZCV - ABXY</div>
+                  <div>QE - L/R</div>
+                  <div>Enter/Shift - Start/Select</div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="font-medium text-white/80">Player 2 (Arrow Keys)</div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  <div>Arrows - Move</div>
+                  <div>IKLO - ABXY</div>
+                  <div>UP - L/R</div>
+                  <div>Space/Shift - Start/Select</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Game Navigation Controls */}
+            <div className="text-xs text-white/60">
+              <div className="font-medium text-white/80 mb-1">Game Selection</div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div>↑↓ - Navigate games</div>
+                <div>Enter - Select game</div>
+                <div>Escape - Exit navigation</div>
+                <div>Click - Select game</div>
+              </div>
+            </div>
+
+            {/* Screenshot Controls */}
+            {activeRomLocal && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => captureGameScreenshot(activeRomLocal)}
+                  className="px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white"
+                  title="Capture screenshot of current game"
+                >
+                  📸 Capture Screenshot
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="text-[11px] text-white/40">Note: Only load ROMs you own rights to. Local files are not uploaded.</div>
+
+          {/* Bottom row: QR codes + Upload */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start pt-2 border-t border-white/10">
+            {/* QR codes (two columns on md) */}
+            <div className="md:col-span-2 grid grid-cols-2 gap-3">
+              <div className="rounded border border-white/10 p-2 text-center">
+                <div className="text-xs mb-1">Player 1</div>
+                {qr1 ? (
+                  <img src={qr1} alt="Player 1 QR" className="mx-auto" />
+                ) : (
+                  <div className="text-xs text-white/50">Loading…</div>
+                )}
+                {controllerBase && (
+                  <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '1'}</div>
+                )}
+              </div>
+              <div className="rounded border border-white/10 p-2 text-center">
+                <div className="text-xs mb-1">Player 2</div>
+                {qr2 ? (
+                  <img src={qr2} alt="Player 2 QR" className="mx-auto" />
+                ) : (
+                  <div className="text-xs text-white/50">Loading…</div>
+                )}
+                {controllerBase && (
+                  <div className="mt-1 text-[10px] text-white/40 break-all">{controllerBase + '2'}</div>
+                )}
+              </div>
+            </div>
+            {/* Upload area */}
+            <div
+              className="rounded-md border border-dashed border-white/20 p-4 text-sm text-white/70 hover:border-white/40 transition-colors"
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }}
+              onDrop={onDrop}
+            >
+              <p className="mb-2">Drag and drop ROMs here</p>
+              <button className="px-3 py-1.5 rounded bg-primary/20 hover:bg-primary text-white" onClick={() => fileInputRef.current?.click()} disabled={loading}>{loading ? 'Adding…' : 'Add ROMs'}</button>
+              <input ref={fileInputRef} type="file" accept=".smc,.sfc,.fig,.swc,.zip,.7z,application/zip,application/x-7z-compressed,application/octet-stream" multiple className="hidden" onChange={(e) => handleFiles(e.currentTarget.files)} />
+              <p className="mt-2 text-xs text-white/50">Stored locally via IndexedDB; progress stays in this browser.</p>
+            </div>
           </div>
         </div>
       </div>
