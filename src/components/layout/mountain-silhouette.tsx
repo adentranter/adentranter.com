@@ -13,12 +13,13 @@ export default function MountainSilhouette({ className }: MountainSilhouetteProp
   return (
     <div
       className={cn(
-        "pointer-events-none select-none absolute inset-x-0 bottom-0 z-0",
+        "pointer-events-none select-none absolute bottom-0 z-0",
         className,
       )}
       style={{
         height: "var(--mountain-h, 32vh)",
-        transform: "translateX(calc(-1 * var(--scene-left-cut, 0px)))",
+        left: "calc(-1 * var(--scene-left-cut, 0px))",
+        right: 0,
       }}
     >
       <svg
