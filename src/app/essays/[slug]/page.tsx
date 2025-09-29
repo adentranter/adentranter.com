@@ -105,7 +105,7 @@ export default async function Page({
                   {...props}
                 />
               ),
-              ul: ({ node, ordered, ...props }) => (
+              ul: ({ node, ...props }) => (
                 <ul
                   className="list-disc pl-6 my-6 space-y-2 [&_blockquote]:my-4"
                   {...props}

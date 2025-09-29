@@ -24,7 +24,7 @@ export function TextBackground() {
   const processedWords = useMemo(() => {
     // Extract all text from essays
     const allText = Object.values(essays)
-      .map(essay => essay.content)
+      .map(({ title, excerpt }) => `${title} ${excerpt ?? ''}`)
       .join(' ')
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ') // Remove punctuation
