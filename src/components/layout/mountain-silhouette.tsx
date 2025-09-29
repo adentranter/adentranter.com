@@ -69,11 +69,21 @@ export default function MountainSilhouette({ className }: MountainSilhouetteProp
         <g>
           {/* Trees */}
           <polygon points="220,340 230,300 240,340" fill="#081427" />
+          <polygon points="290,348 302,308 314,348" fill="#071628" />
           <polygon points="360,350 372,310 384,350" fill="#081427" />
+          <polygon points="430,335 440,297 452,335" fill="#071d33" />
           <polygon points="500,330 512,290 524,330" fill="#081427" />
+          <polygon points="568,344 580,304 592,344" fill="#071628" />
           <polygon points="640,340 652,300 664,340" fill="#081427" />
-          <polygon points="1080,260 1090,230 1100,260" fill="#081427" />
+          <polygon points="704,332 716,298 728,332" fill="#071d33" />
+          <polygon points="780,320 790,284 804,320" fill="#081427" />
+          <polygon points="846,326 858,292 872,326" fill="#071728" />
+          <polygon points="910,310 922,276 936,310" fill="#081427" />
+          <polygon points="974,302 984,270 996,302" fill="#071d33" />
+          <polygon points="1035,290 1046,262 1058,290" fill="#081427" />
+          <polygon points="1080,260 1090,230 1100,260" fill="#071628" />
           <polygon points="1120,260 1132,225 1144,260" fill="#081427" />
+          <polygon points="1166,248 1177,220 1188,248" fill="#071d33" />
           {/* House 1 */}
           <rect x="1180" y="250" width="26" height="18" fill="#081427" />
           <polygon points="1170,250 1193,235 1216,250" fill="#081427" />
@@ -102,6 +112,8 @@ export default function MountainSilhouette({ className }: MountainSilhouetteProp
           <rect x="1240" y="250" width="24" height="16" fill="#081427" />
           <polygon points="1230,250 1252,238 1274,250" fill="#081427" />
           <rect x="1246" y="256" width="6" height="6" fill="#ffd278" />
+          {/* clustered shrubs near house */}
+          <path d="M1215 270 C1220 260 1228 258 1235 268 C1240 260 1248 262 1252 272 C1256 262 1264 264 1268 272 L1215 272 Z" fill="#061121" />
         </g>
       </svg>
     </div>

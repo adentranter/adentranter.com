@@ -29,7 +29,7 @@ export function Navbar() {
         {/* Hide social icons on mobile */}
         <div className="hidden md:flex items-center space-x-4 text-white/70">
           <nav className="flex items-center space-x-4">
-            <Link href="https://instagram.com/sdgrasshopper" target="_blank" rel="noreferrer">
+            <Link href="https://instagram.com/adentranter" target="_blank" rel="noreferrer">
               <Instagram className="h-5 w-5" />
             </Link>
             <Link href="https://twitter.com/adentranter" target="_blank" rel="noreferrer">

@@ -14,10 +14,11 @@ export default function SunsetGradient({
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden text-white",
+        "relative w-full overflow-hidden",
         className
       )}
       style={{
+        minHeight: "100%",
         // 3 stacked backgrounds, back (last) → front (first)
         backgroundImage: [
           // (1) Outermost sun glow ring - large white diffusion

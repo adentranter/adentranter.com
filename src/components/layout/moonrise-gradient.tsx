@@ -15,10 +15,11 @@ export default function MoonriseGradient({
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden text-white",
+        "relative w-full overflow-hidden",
         className
       )}
       style={{
+        minHeight: "100%",
         // 4 stacked backgrounds, back (last) → front (first)
         backgroundImage: [
           // (1) Outermost moon glow ring - large white diffusion (off to the left)
@@ -68,5 +69,4 @@ export default function MoonriseGradient({
     </div>
   )
 }
-
 

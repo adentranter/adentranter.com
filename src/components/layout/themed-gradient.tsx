@@ -5,13 +5,19 @@ import { useEffect, useState } from "react"
 import SunsetGradient from "./sunset-gradient"
 import MoonriseGradient from "./moonrise-gradient"
 import MountainSilhouette from "./mountain-silhouette"
+import { cn } from "@/lib/utils"
 
 interface ThemedGradientProps {
   children?: React.ReactNode
   className?: string
+  gradientClassName?: string
 }
 
-export default function ThemedGradient({ children, className }: ThemedGradientProps) {
+export default function ThemedGradient({
+  children,
+  className,
+  gradientClassName,
+}: ThemedGradientProps) {
   const { theme, systemTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
@@ -22,8 +28,11 @@ export default function ThemedGradient({ children, className }: ThemedGradientPr
   // Prevent hydration mismatch by not rendering theme-dependent content until mounted
   if (!mounted) {
     return (
-      <div className="relative w-full overflow-hidden" style={{ "--mountain-h": "32vh" } as React.CSSProperties}>
-        <SunsetGradient className={className}>{children}</SunsetGradient>
+      <div
+        className={cn("relative w-full overflow-hidden", className)}
+        style={{ "--mountain-h": "32vh" } as React.CSSProperties}
+      >
+        <SunsetGradient className={gradientClassName}>{children}</SunsetGradient>
         <MountainSilhouette variant="day" />
       </div>
     )
@@ -35,10 +44,12 @@ export default function ThemedGradient({ children, className }: ThemedGradientPr
   const Wrapper = isDark ? MoonriseGradient : SunsetGradient
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ "--mountain-h": "32vh" } as React.CSSProperties}>
-      <Wrapper className={className}>{children}</Wrapper>
+    <div
+      className={cn("relative w-full overflow-hidden", className)}
+      style={{ "--mountain-h": "32vh" } as React.CSSProperties}
+    >
+      <Wrapper className={gradientClassName}>{children}</Wrapper>
       <MountainSilhouette variant={isDark ? "night" : "day"} />
     </div>
   )
 }
-

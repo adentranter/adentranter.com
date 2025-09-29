@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { essays, Essay } from './data'
+import { essays, EssayMeta } from './data'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -38,8 +38,9 @@ export default async function EssaysPage() {
 
       <div className="space-y-8">
         {Object.values(essays)
+          .filter((essay) => essay.listed !== false)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          .map((essay: Essay) => (
+          .map((essay: EssayMeta) => (
             <article key={essay.slug} className="border-b border-white/10 pb-8">
               <Link 
                 href={`/essays/${essay.slug}`}

@@ -1,7 +1,7 @@
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import AppFrame from "@/components/layout/app-frame"
-import { TextBackground } from "@/components/text-background"
+import FireflyCursor from "@/components/layout/firefly-cursor"
 import { Analytics } from "@vercel/analytics/react"
 import Script from "next/script"
 import "./globals.css"
@@ -49,7 +49,7 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
-          <TextBackground />
+          <FireflyCursor />
           <AppFrame>
             {children}
           </AppFrame>

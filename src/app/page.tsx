@@ -92,6 +92,14 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Usin
       {/* Horizontal Rule */}
       <div className="w-full h-px bg-primary/50" />
 
+      {/* Contact */}
+      <section className="space-y-4 text-center">
+        <h2 className="text-2xl font-light">Want to chat?</h2>
+        <p className="text-white/80">
+          I love ranting. Email me. If you can&apos;t figure that out, you shouldn&apos;t be emailing me.
+        </p>
+      </section>
+
       {/* Second Project - Twine */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Twine Screenshot */}
@@ -191,49 +199,7 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Usin
           </div>
         </div>
       </section>
-
-      {/* Horizontal Rule */}
-      <div className="w-full h-px bg-primary/50" />
-
-      {/* Community Section */}
-      <section className="text-center space-y-6 py-16">
-        <h2 className="text-3xl font-bold">Join the Townsville Product Builders/Founders/Tinkers</h2>
-        <p className="text-white/80 max-w-xl mx-auto">
-          Building apps, software, and solving cool problems gets easier when you have a community behind you. I'm
-          kicking-off a brand-new (read: <em>very</em> early-stage) Slack space for technical—and technical-curious—founders
-          across Queensland. The goal: swap stories, road-test ideas, share product-management tips, and generally help
-          each other ship better software.
-        </p>
-        <p className="text-white/70 max-w-xl mx-auto">
-          If that sounds like your jam (or you just want some like-minded folks to geek out with), jump in and help shape
-          the community from day one.
-        </p>
-        <Link
-          href="https://join.slack.com/t/technicalfoun-2t44634/shared_invite/zt-37eegb8vp-zOqGT7d9aLgWVyuv7rdKNQ"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-background-dark font-medium hover:bg-primary/90 transition-colors"
-        >
-          {/* Slack Icon */}
-          <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.8 122.8" aria-hidden="true">
-            <path d="M30.3 77.7a15.2 15.2 0 1 1-15.2-15.2h15.2v15.2z" fill="#E01E5A"/>
-            <path d="M37.9 77.7a15.2 15.2 0 1 1 30.3 0v37.9a15.2 15.2 0 1 1-30.3 0V77.7z" fill="#E01E5A"/>
-            <path d="M45.4 30.3a15.2 15.2 0 1 1-15.2-15.2 15.2 15.2 0 0 1 15.2 15.2z" fill="#36C5F0"/>
-            <path d="M45.4 37.9a15.2 15.2 0 1 1 0 30.3H7.5a15.2 15.2 0 1 1 0-30.3h37.9z" fill="#36C5F0"/>
-            <path d="M92.9 45.4a15.2 15.2 0 1 1 15.2-15.2v15.2H92.9z" fill="#2EB67D"/>
-            <path d="M85.4 45.4a15.2 15.2 0 1 1-30.3 0V7.5a15.2 15.2 0 1 1 30.3 0v37.9z" fill="#2EB67D"/>
-            <path d="M77.8 92.9a15.2 15.2 0 1 1 15.2 15.2 15.2 15.2 0 0 1-15.2-15.2z" fill="#ECB22E"/>
-            <path d="M77.8 85.4a15.2 15.2 0 1 1 0-30.3h37.9a15.2 15.2 0 1 1 0 30.3H77.8z" fill="#ECB22E"/>
-          </svg>
-          Join the Slack Community
-        </Link>
-        <p className="text-white/60 text-sm mt-4">
-          Prefer email? You can reach me at <a href="mailto:adentranter@gmail.com" className="underline hover:text-white">adentranter@gmail.com</a>
-        </p>
-      </section>
-
-      {/* Horizontal Rule */}
-      <div className="w-full h-px bg-primary/50" />
+      
     </div>
   )
 }
