@@ -101,10 +101,21 @@ export default function SnesController({ sessionId, playerId }: Props) {
     setStarted(true)
   }
 
+  const playerPrefix = useMemo(() => {
+    if (playerId === '1') return 'p1'
+    if (playerId === '2') return 'p2'
+    return null
+  }, [playerId])
+
+  const mapControl = (control: string) => {
+    if (control.startsWith('__')) return control
+    return playerPrefix ? `${playerPrefix}_${control}` : control
+  }
+
   function send(control: string, state: 'down' | 'up') {
-    const payload = { type: 'button', control, state }
+    const payload = { type: 'button', control: mapControl(control), state }
     console.log('[Controller] Sending:', payload, 'to:', pushUrl)
-    
+
     if (pushUrl) {
       fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
         .then(res => {
