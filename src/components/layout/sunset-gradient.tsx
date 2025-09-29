@@ -19,6 +19,8 @@ export default function SunsetGradient({
       )}
       style={{
         minHeight: "100%",
+        // Shift the scene so mobile can crop the left edge without reflowing content.
+        transform: "translateX(calc(-1 * var(--scene-left-cut, 0px)))",
         // 3 stacked backgrounds, back (last) → front (first)
         backgroundImage: [
           // (1) Outermost sun glow ring - large white diffusion

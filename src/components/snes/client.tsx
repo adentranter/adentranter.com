@@ -860,6 +860,7 @@ export default function SnesClient(props: { sessionId?: string }) {
   }, [activeRomLocal, activeRomRemote, interfaceStage])
 
   const handleInputSelection = (method: 'keyboard' | 'phone') => {
+
     setLandingSelection(method)
     setSelectedInputMethod(method)
     if (method === 'keyboard') {
@@ -902,6 +903,7 @@ export default function SnesClient(props: { sessionId?: string }) {
           <button
             className={`rounded-2xl border-2 p-8 transition-all ${
               landingSelection === 'keyboard'
+
                 ? 'border-primary bg-primary/20 scale-[1.01]'
                 : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
             }`}
@@ -919,7 +921,9 @@ export default function SnesClient(props: { sessionId?: string }) {
 
           <button
             className={`rounded-2xl border-2 p-8 transition-all ${
+
               landingSelection === 'phone'
+
                 ? 'border-primary bg-primary/20 scale-[1.01]'
                 : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
             }`}
