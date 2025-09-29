@@ -3,11 +3,11 @@ const nextConfig = {
   experimental: {
     serverActions: {
       // Increase the body size limit to 5MB (value in bytes)
-      bodySizeLimit: 5 * 1024 * 1024, 
+      bodySizeLimit: 5 * 1024 * 1024,
     },
-    outputFileTracingIncludes: {
-      '/app/essays/[slug]/page': ['./src/app/essays/content/**/*'],
-    },
+  },
+  outputFileTracingIncludes: {
+    '/(app)/essays/[slug]/page': ['./src/app/essays/content/**/*'],
   },
   images: {
     remotePatterns: [
