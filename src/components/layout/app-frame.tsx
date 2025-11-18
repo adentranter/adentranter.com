@@ -8,6 +8,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const hideChrome =
     pathname?.startsWith("/fireworks") ||
+    pathname?.startsWith("/toowicked") ||
     (pathname?.startsWith("/snes/") && pathname?.includes("/player/"))
 
   if (hideChrome) {
