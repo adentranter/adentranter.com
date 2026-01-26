@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server'
 
+function getRedirectUri(request: Request): string {
+  // Use environment variable if set
+  if (process.env.SPOTIFY_REDIRECT_URI) {
+    return process.env.SPOTIFY_REDIRECT_URI
+  }
+  
+  // Auto-detect from request URL
+  const url = new URL(request.url)
+  const protocol = url.protocol === 'https:' ? 'https' : 'http'
+  const host = url.host
+  
+  return `${protocol}://${host}/api/spotify/callback`
+}
+
 export async function GET(request: Request) {
   try {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+
+  const redirectUri = getRedirectUri(request)
 
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -16,7 +32,7 @@ export async function GET(request: Request) {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code: code!,
-      redirect_uri: 'https://adentranter.com/api/spotify/callback',
+      redirect_uri: redirectUri,
     }),
   })
 
