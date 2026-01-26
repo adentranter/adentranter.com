@@ -59,6 +59,7 @@ type Stats = {
 export function CodingStats() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -66,6 +67,7 @@ export function CodingStats() {
         const response = await fetch('/api/coding-stats')
         const data = await response.json()
         setStats(data)
+        setLastUpdated(new Date())
       } catch (error) {
         console.error('Failed to fetch stats:', error)
       } finally {
@@ -128,6 +130,11 @@ export function CodingStats() {
                   {stats.today.productivityPulse}%
                 </div>
                 <div className="text-sm text-white/60">Productivity</div>
+                {lastUpdated && (
+                  <div className="text-xs text-white/40">
+                    Updated {lastUpdated.toLocaleTimeString()}
+                  </div>
+                )}
               </div>
             </div>
           </div>

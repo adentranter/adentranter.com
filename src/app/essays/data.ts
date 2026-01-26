@@ -65,4 +65,12 @@ export const essays: Record<string, EssayMeta> = {
       "A field report on building with QuickBooks APIs in Australia, exploring how developer experience and listening to users could help QuickBooks gain market share against larger competitors.",
     contentPath: 'src/app/essays/content/how-david-beats-goliath.md',
   },
+  'how-to-solve-or-why-you-need-to-be-your-own-user': {
+    slug: 'how-to-solve-or-why-you-need-to-be-your-own-user',
+    title: 'How to solve, or why you need to be your own user',
+    date: '2025-01-20',
+    excerpt:
+      'A hard lesson from building Twine: when you build in a domain you don\'t understand, you can\'t defend your product with conviction. You need to be your own user, or at least be so close to the problem that you can feel it in your bones.',
+    contentPath: 'src/app/essays/content/how-to-solve-or-why-you-need-to-be-your-own-user.md',
+  },
 }

@@ -11,6 +11,23 @@ type GitHubStats = {
   // Back-compat: API returns languages map; new field is languagesArray
   languages?: Record<string, { size: number; color: string | null }>
   languagesArray?: { name: string; percentage: number; color: string }[]
+  totalDaysWithContributions?: number
+  totalLanguages?: number
+  totalBytes?: number
+  publicRepos?: number
+  followers?: number
+  longestStreak?: number
+  bestDay?: { date: string; count: number } | null
+  totalCommits?: number
+  averageContributionsPerDay?: string | number
+  totalRepositories?: number
+  commitsByHour?: number[] // Array of 24 numbers (0-23 hours)
+  linesAddedPreviousMonth?: number
+  linesRemovedPreviousMonth?: number
+  linesAddedCurrentWeek?: number
+  linesRemovedCurrentWeek?: number
+  linesAddedPreviousWeek?: number
+  linesRemovedPreviousWeek?: number
 }
 
 // Simple SVG Pie Chart Component
@@ -173,7 +190,7 @@ export function GitHubStats() {
   return (
     <div className="space-y-4">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="space-y-1">
           <div className="text-2xl font-mono text-primary">{stats.thirtyDayContributions}</div>
           <div className="text-sm text-white/60">Contributions (30d)</div>
@@ -182,6 +199,18 @@ export function GitHubStats() {
           <div className="text-2xl font-mono text-primary">{stats.currentStreak} days</div>
           <div className="text-sm text-white/60">Current Streak</div>
         </div>
+        {stats.longestStreak !== undefined && (
+          <div className="space-y-1">
+            <div className="text-2xl font-mono text-primary">{stats.longestStreak} days</div>
+            <div className="text-xs text-white/60">Longest Streak</div>
+          </div>
+        )}
+        {stats.totalRepositories !== undefined && (
+          <div className="space-y-1">
+            <div className="text-2xl font-mono text-primary">{stats.totalRepositories}</div>
+            <div className="text-sm text-white/60">Repositories</div>
+          </div>
+        )}
       </div>
 
       {/* Most Active Repo */}
@@ -199,17 +228,56 @@ export function GitHubStats() {
             <div className="space-y-1">
               <div className="text-xl font-mono text-green-400">+{stats.linesAdded.toLocaleString()}</div>
               <div className="text-sm text-white/60">Lines Added (30d)</div>
+              {stats.linesAddedPreviousMonth !== undefined && (
+                <div className="text-xs text-white/40">
+                  vs last month: {stats.linesAdded > stats.linesAddedPreviousMonth ? '+' : ''}
+                  {(stats.linesAdded - stats.linesAddedPreviousMonth).toLocaleString()}
+                </div>
+              )}
+              {stats.linesAddedCurrentWeek !== undefined && stats.linesAddedPreviousWeek !== undefined && (
+                <div className="text-xs text-white/40">
+                  this week: +{stats.linesAddedCurrentWeek.toLocaleString()} 
+                  {' '}(vs {stats.linesAddedPreviousWeek.toLocaleString()})
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <div className="text-xl font-mono text-red-400">-{stats.linesRemoved.toLocaleString()}</div>
               <div className="text-sm text-white/60">Lines Removed (30d)</div>
+              {stats.linesRemovedPreviousMonth !== undefined && (
+                <div className="text-xs text-white/40">
+                  vs last month: {stats.linesRemoved > stats.linesRemovedPreviousMonth ? '+' : ''}
+                  {(stats.linesRemoved - stats.linesRemovedPreviousMonth).toLocaleString()}
+                </div>
+              )}
+              {stats.linesRemovedCurrentWeek !== undefined && stats.linesRemovedPreviousWeek !== undefined && (
+                <div className="text-xs text-white/40">
+                  this week: -{stats.linesRemovedCurrentWeek.toLocaleString()}
+                  {' '}(vs {stats.linesRemovedPreviousWeek.toLocaleString()})
+                </div>
+              )}
             </div>
             
             {/* Stats Box */}
             <div className="text-xs text-white/40 space-y-1 pt-2">
-              <div>Contributions: 371 days</div>
-              <div>Languages: 18 total</div>
-              <div>Total bytes: 18,316,041</div>
+              <div>Contributions: {stats.totalDaysWithContributions?.toLocaleString() || 'N/A'} days</div>
+              <div>Languages: {stats.totalLanguages || 'N/A'} total</div>
+              <div>Total bytes: {stats.totalBytes?.toLocaleString() || 'N/A'}</div>
+              {stats.totalCommits !== undefined && (
+                <div>Commits (30d): {stats.totalCommits.toLocaleString()}</div>
+              )}
+              {stats.bestDay && (
+                <div>Best day: {stats.bestDay.count} on {new Date(stats.bestDay.date).toLocaleDateString()}</div>
+              )}
+              {stats.averageContributionsPerDay && (
+                <div>Avg/day: {stats.averageContributionsPerDay}</div>
+              )}
+              {stats.publicRepos !== undefined && (
+                <div>Public repos: {stats.publicRepos}</div>
+              )}
+              {stats.followers !== undefined && (
+                <div>Followers: {stats.followers}</div>
+              )}
             </div>
           </div>
           
@@ -220,6 +288,41 @@ export function GitHubStats() {
           </div>
         </div>
       </div>
+
+      {/* Commit Activity by Hour */}
+      {stats.commitsByHour && stats.commitsByHour.length > 0 && (
+        <div className="pt-2 border-t border-white/10">
+          <div className="text-sm text-white/60 mb-3">Commit Activity by Hour (30d)</div>
+          <div className="space-y-2">
+            <div className="flex gap-0.5 items-end">
+              {stats.commitsByHour.map((count, hour) => {
+                const maxCommits = Math.max(...stats.commitsByHour!)
+                const height = maxCommits > 0 ? (count / maxCommits) * 100 : 0
+                const hourLabel = hour.toString().padStart(2, '0') + ':00'
+                
+                return (
+                  <div key={hour} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                    <div 
+                      className="w-full bg-primary rounded-t transition-all hover:opacity-80 cursor-pointer"
+                      style={{ 
+                        height: `${Math.max(height, 5)}px`,
+                        minHeight: '4px'
+                      }}
+                      title={`${count} commits at ${hourLabel}`}
+                    />
+                    {hour % 4 === 0 && (
+                      <span className="text-[8px] text-white/40 whitespace-nowrap">{hourLabel}</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="text-xs text-white/40 text-center mt-2">
+              Peak: {stats.commitsByHour.indexOf(Math.max(...stats.commitsByHour))}:00 ({Math.max(...stats.commitsByHour)} commits)
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

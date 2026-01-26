@@ -10,7 +10,10 @@ export async function GET(_req: NextRequest) {
   const { essays } = await import("../essays/data")
   const essayRoutes = Object.values(essays).map((essay) => `/essays/${essay.slug}`)
 
-  const routes = [...staticRoutes, ...essayRoutes]
+  const { projects } = await import("../projects/data")
+  const projectRoutes = Object.values(projects).map((project) => `/projects/${project.slug}`)
+
+  const routes = [...staticRoutes, ...essayRoutes, ...projectRoutes]
   const lastMod = new Date().toISOString()
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>

@@ -7,6 +7,7 @@ import Logo from "@/components/voxlogo"
 import TwineLogo from "@/components/twineLogo"
 import { GitHubStats } from "@/components/github-stats"
 import type { Metadata } from "next"
+import { projects } from "./projects/data"
 
 export const metadata: Metadata = {
   title: "Aden Tranter - Software Engineer & Problem Solver",
@@ -36,6 +37,40 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
+  const featuredProjects = Object.values(projects)
+    .filter((p) => p.featured)
+    .sort((a, b) => {
+      // Keep twine first, then voxit, then others
+      if (a.slug === 'twine') return -1
+      if (b.slug === 'twine') return 1
+      if (a.slug === 'voxit') return -1
+      if (b.slug === 'voxit') return 1
+      return 0
+    })
+
+  const getProjectLabel = (index: number, slug: string) => {
+    if (index === 0) return 'Primary Project'
+    if (index === 1) return 'Secondary Project'
+    return null
+  }
+
+  const getLogoComponent = (project: typeof projects[string]) => {
+    if (project.logoComponent === 'voxit') return <Logo size="lg" />
+    if (project.logoComponent === 'twine') return <TwineLogo size="large" />
+    if (project.logoImagePath) {
+      return (
+        <Image
+          src={project.logoImagePath}
+          alt={`${project.title} Logo`}
+          width={120}
+          height={40}
+          className="h-10 w-auto"
+        />
+      )
+    }
+    return null
+  }
+
   return (
     <div className="flex flex-col gap-16 py-16">
       {/* Hero Section */}
@@ -51,43 +86,108 @@ export default function Home() {
 
       {/* Horizontal Rule */}
       <div className="w-full h-px bg-primary/50" />
-      {/* Featured Work + Description Grid */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Voxit Screenshot */}
-        <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">
-          {/* Browser Chrome */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">
-            {/* Window Controls */}
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-            </div>
-            {/* URL Bar */}
-            <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
-              <span className="text-xs text-white/50">https://voxit.com.au</span>
-            </div>
+
+      {/* Featured Projects */}
+      {featuredProjects.map((project, index) => {
+        const projectLabel = getProjectLabel(index, project.slug)
+        const LogoComponent = getLogoComponent(project)
+        
+        return (
+          <div key={project.slug}>
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              {/* Project Screenshot */}
+              {project.imagePath && (
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">
+                  {/* Browser Chrome */}
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">
+                    {/* Window Controls */}
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                    </div>
+                    {/* URL Bar */}
+                    <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
+                      <span className="text-xs text-white/50">
+                        {project.url ? project.url.replace(/^https?:\/\//, '') : 'project preview'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <Link href={`/projects/${project.slug}`} className="pt-8 block">
+                    {projectLabel && (
+                      <h2 className="text-2xl mb-4 font-light">{projectLabel}</h2>
+                    )}
+                    <Image 
+                      src={project.imagePath} 
+                      alt={`${project.title} Dashboard`} 
+                      width={1920} 
+                      height={1080} 
+                      className="w-full" 
+                    />
+                  </Link>
+                </div>
+              )}
+
+              {/* Project Description */}
+              <div className="space-y-6">
+                <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
+                {LogoComponent && project.tagline ? (
+                  <span className="leading-relaxed flex items-center gap-2">
+                    {LogoComponent}
+                    <span className="text-[19px] tracking-[0.122em] font-[100]">
+                      {project.tagline}
+                    </span>
+                  </span>
+                ) : LogoComponent ? (
+                  <div className="leading-relaxed flex items-center">
+                    {LogoComponent}
+                  </div>
+                ) : (
+                  <h2 className="text-2xl font-light">{project.title}</h2>
+                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs px-2 py-1 rounded border border-white/20 text-white/60">
+                    {project.projectType}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    project.status === 'POC - MVP' 
+                      ? 'bg-primary/20 text-primary border border-primary/30'
+                      : project.status === 'Planning'
+                      ? 'bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30'
+                      : project.status === 'Production'
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : project.status === 'Open Source'
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : project.status === 'Experiment'
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      : 'bg-white/10 text-white/60 border border-white/20'
+                  }`}>
+                    {project.status}
+                  </span>
+                </div>
+                <div className="space-y-4 text-white/80">
+                  <p>{project.blurb}</p>
+                  {project.techStack && (
+                    <p className="text-white/60">Tech Stack: {project.techStack}</p>
+                  )}
+                  <Link 
+                    href={`/projects/${project.slug}`}
+                    className="text-primary hover:text-accent-secondary transition-colors inline-block"
+                  >
+                    Learn more →
+                  </Link>
+                </div>
+              </div>
+            </section>
+
+            {/* Horizontal Rule between projects */}
+            {index < featuredProjects.length - 1 && (
+              <div className="w-full h-px bg-primary/50 mt-16" />
+            )}
           </div>
-          
-          <Link href="https://voxit.com.au" className="pt-8">
-          <h2 className="text-2xl mb-4 font-light">Primary Project</h2>
-
-            <Image src="/screenshots/voxit.png" alt="Voxit Dashboard" width={1920} height={1080} className="w-full" />
-          </Link>
-        </div>
-
-        {/* Voxit Description */}
-        <div className="space-y-6">
-
-        <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
-        <span className="leading-relaxed"> <Logo size="lg" />  <span className="text-[19px] ml-2 tracking-[0.122em] font-[100] ">AI-Powered, Human Perfected</span></span>
-          <div className="space-y-4 text-white/80">
-            <p>
-Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Using WhisperX and LLaMA, we transcribe and proofread your audio files.      </p>
-            <p className="text-white/60">Tech Stack: Next.js, React, Supabase, Tauri</p>
-          </div>
-        </div>
-      </section>
+        )
+      })}
 
       {/* Horizontal Rule */}
       <div className="w-full h-px bg-primary/50" />
@@ -100,84 +200,8 @@ Transcription at the Speed of Thought - Faster, Cheaper, Better.<br/> <br/> Usin
         </p>
       </section>
 
-      {/* Second Project - Twine */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Twine Screenshot */}
-        <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">
-          {/* Browser Chrome */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">
-            {/* Window Controls */}
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-              <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-            </div>
-            {/* URL Bar */}
-            <div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">
-              <span className="text-xs text-white/50">https://twinebiller.com.au</span>
-            </div>
-          </div>
-          
-          <Link href="https://twinebiller.com.au" className="pt-8">
-          <h2 className="text-2xl mb-4 font-light">Secondary Project</h2>
-
-            <Image src="/screenshots/twine.png" alt="Twine Dashboard" width={1920} height={1080} className="w-full" />
-          </Link>
-        </div>
-
-        {/* Twine Description */}
-        <div className="space-y-6">
-          <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
-          <span className="leading-relaxed"> <TwineLogo size="large" />  <span className="text-[19px] ml-2 tracking-[0.122em] font-[100] ">Connect. Invoice. Automate.</span></span>
-          <div className="space-y-4 text-white/80">
-            <p>
-              Seamlessly link Employment Hero with QuickBooks, automatically generating invoices at payroll time - so you never miss a charge or waste time on manual invoicing.
-            </p>
-            <p className="text-white/60">Tech Stack: Next.js, React, Supabase, Trigger.dev</p>
-          </div>
-        </div>
-      </section>
-
       {/* Horizontal Rule */}
       <div className="w-full h-px bg-primary/50" />
-
-
-      {/* Fourth Project – What Am I On (working title) */}
-      {/*<section className="grid grid-cols-1 lg:grid-cols-2 gap-12">*/}
-        {/* Screenshot placeholder */}
-        {/*<div className="relative aspect-video rounded-lg overflow-hidden bg-[#1a1a1a] shadow-xl">*/}
-          {/* Browser Chrome */}
-          {/*<div className="absolute top-0 left-0 right-0 h-8 bg-[#2a2a2a] flex items-center px-4 gap-2">*/}
-            {/* Window Controls */}
-            {/*<div className="flex gap-1.5">*/}
-              {/*<div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>*/}
-              {/*<div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>*/}
-              {/*<div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>*/}
-            {/*</div>*/}
-            {/* URL Bar */}
-            {/*<div className="ml-4 flex-1 bg-[#1a1a1a] rounded-md h-5 flex items-center px-3">*/}
-              {/*<span className="text-xs text-white/50">https://holistictracker.app (coming soon)</span>*/}
-            {/*</div>*/}
-          {/*</div>*/}
-
-          {/*<Image src="/file.svg" alt="Holistic Tracker" width={1920} height={1080} className="pt-8 w-full" />*/}
-        {/*</div>*/}
-
-        {/* Description */}
-        {/*<div className="space-y-6">*/}
-          {/*<h2 className="text-2xl font-light mb-4">What&nbsp;Am&nbsp;I&nbsp;On&nbsp;(working&nbsp;title)</h2>*/}
-          {/*<div className="space-y-4 text-white/80">*/}
-            {/*<p>*/}
-              {/*A full-stack health journal that correlates sleep, substance use, breathing exercises, mood and pain*/}
-              {/*scores. Overlay the data to spot patterns, triggers, and actionable insights over time.*/}
-            {/*</p>*/}
-            {/*<p className="text-white/60">Tech Stack: Next.js, Prisma, Postgres, tRPC, React&nbsp;Charts</p>*/}
-          {/*</div>*/}
-        {/*</div>*/}
-      {/*</section>*/}
-
-      {/* Horizontal Rule */}
-      {/*<div className="w-full h-px bg-primary/50" />*/}
 
       {/* Stats Section */}
       <section className="space-y-6">
