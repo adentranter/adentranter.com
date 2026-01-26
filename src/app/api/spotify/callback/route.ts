@@ -14,12 +14,21 @@ function getRedirectUri(request: Request): string {
   return `${protocol}://${host}/api/spotify/callback`
 }
 
+function getBaseUrl(request: Request): string {
+  const url = new URL(request.url)
+  const protocol = url.protocol === 'https:' ? 'https' : 'http'
+  const host = url.host
+  
+  return `${protocol}://${host}`
+}
+
 export async function GET(request: Request) {
   try {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
 
   const redirectUri = getRedirectUri(request)
+  const baseUrl = getBaseUrl(request)
 
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -39,9 +48,10 @@ export async function GET(request: Request) {
   // Intentionally do not log tokens
   await response.json()
   
-  return NextResponse.redirect('/')
+  return NextResponse.redirect(`${baseUrl}/`)
   } catch (error) {
     console.error('Error in Spotify callback:', error)
-    return NextResponse.redirect('/error')
+    const baseUrl = getBaseUrl(request)
+    return NextResponse.redirect(`${baseUrl}/error`)
   }
 } 
