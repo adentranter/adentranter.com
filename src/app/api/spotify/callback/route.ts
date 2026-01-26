@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code: code!,
-      redirect_uri: 'http://localhost:3000/api/spotify/callback',
+      redirect_uri: 'https://adentranter.com/api/spotify/callback',
     }),
   })
 
