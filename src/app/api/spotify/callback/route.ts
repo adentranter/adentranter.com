@@ -1,9 +1,34 @@
 import { NextResponse } from 'next/server'
 
+function getRedirectUri(request: Request): string {
+  // Use environment variable if set
+  if (process.env.SPOTIFY_REDIRECT_URI) {
+    return process.env.SPOTIFY_REDIRECT_URI
+  }
+  
+  // Auto-detect from request URL
+  const url = new URL(request.url)
+  const protocol = url.protocol === 'https:' ? 'https' : 'http'
+  const host = url.host
+  
+  return `${protocol}://${host}/api/spotify/callback`
+}
+
+function getBaseUrl(request: Request): string {
+  const url = new URL(request.url)
+  const protocol = url.protocol === 'https:' ? 'https' : 'http'
+  const host = url.host
+  
+  return `${protocol}://${host}`
+}
+
 export async function GET(request: Request) {
   try {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+
+  const redirectUri = getRedirectUri(request)
+  const baseUrl = getBaseUrl(request)
 
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -16,16 +41,17 @@ export async function GET(request: Request) {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code: code!,
-      redirect_uri: 'http://localhost:3000/api/spotify/callback',
+      redirect_uri: redirectUri,
     }),
   })
 
   // Intentionally do not log tokens
   await response.json()
   
-  return NextResponse.redirect('/')
+  return NextResponse.redirect(`${baseUrl}/`)
   } catch (error) {
     console.error('Error in Spotify callback:', error)
-    return NextResponse.redirect('/error')
+    const baseUrl = getBaseUrl(request)
+    return NextResponse.redirect(`${baseUrl}/error`)
   }
 } 

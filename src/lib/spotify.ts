@@ -74,7 +74,10 @@ class SpotifyAPIClient {
     if (!this.accessToken || Date.now() >= this.tokenExpirationTime) {
       await this.refreshAccessToken()
     }
-    return this.accessToken!
+    if (!this.accessToken) {
+      throw new Error('Failed to obtain access token')
+    }
+    return this.accessToken
   }
 
   public async fetchSpotifyApi<T>(endpoint: string): Promise<T> {
@@ -230,6 +233,170 @@ export async function getSpotifyData() {
       }
     }
   }
+}
+
+// Export helper functions for comprehensive data fetching
+interface PaginatedResponse<T> {
+  items: T[]
+  next: string | null
+  total?: number
+}
+
+interface SpotifyUser {
+  id: string
+  display_name?: string
+}
+
+interface SpotifyPlaylistItem {
+  id: string
+  name: string
+  description?: string
+  owner: {
+    id: string
+    display_name?: string
+  }
+  public: boolean
+  collaborative: boolean
+  snapshot_id?: string
+  images?: Array<{ url: string }>
+  created_at?: string
+}
+
+interface SpotifyPlaylistTrackItem {
+  added_at?: string
+  track: {
+    id: string
+    name: string
+    artists: Array<{ name: string; id?: string }>
+    album: {
+      id: string
+      name: string
+      images?: Array<{ url: string }>
+    }
+    duration_ms: number
+    explicit: boolean
+    track_number?: number
+    disc_number?: number
+    preview_url?: string | null
+    external_urls: {
+      spotify: string
+    }
+  }
+}
+
+interface SpotifySavedTrack {
+  added_at: string
+  track: {
+    id: string
+    name: string
+    artists: Array<{ name: string; id?: string }>
+    album: {
+      id: string
+      name: string
+    }
+    duration_ms: number
+    explicit: boolean
+    track_number?: number
+    disc_number?: number
+    preview_url?: string | null
+    external_urls: {
+      spotify: string
+    }
+  }
+}
+
+interface SpotifyArtist {
+  id: string
+  name: string
+  genres?: string[]
+  images?: Array<{ url: string }>
+  external_urls: {
+    spotify: string
+  }
+}
+
+/**
+ * Fetch user profile data
+ */
+export async function getUserProfile(): Promise<SpotifyUser> {
+  const client = SpotifyAPIClient.getInstance()
+  return client.fetchSpotifyApi<SpotifyUser>('/me')
+}
+
+/**
+ * Fetch all playlists with pagination
+ */
+export async function getAllPlaylists(): Promise<SpotifyPlaylistItem[]> {
+  const client = SpotifyAPIClient.getInstance()
+  const allPlaylists: SpotifyPlaylistItem[] = []
+  let next: string | null = '/me/playlists?limit=50'
+
+  while (next) {
+    const endpoint = next.startsWith('http') ? next.replace(SPOTIFY_API_BASE, '') : next
+    const response = await client.fetchSpotifyApi<PaginatedResponse<SpotifyPlaylistItem>>(endpoint)
+    allPlaylists.push(...response.items)
+    next = response.next
+  }
+
+  return allPlaylists
+}
+
+/**
+ * Fetch all tracks for a specific playlist with pagination
+ */
+export async function getPlaylistTracks(playlistId: string): Promise<SpotifyPlaylistTrackItem[]> {
+  const client = SpotifyAPIClient.getInstance()
+  const allTracks: SpotifyPlaylistTrackItem[] = []
+  let next: string | null = `/playlists/${playlistId}/tracks?limit=50&market=US`
+
+  while (next) {
+    const endpoint = next.startsWith('http') ? next.replace(SPOTIFY_API_BASE, '') : next
+    const response = await client.fetchSpotifyApi<PaginatedResponse<SpotifyPlaylistTrackItem>>(endpoint)
+    // Filter out null tracks (can happen if track was deleted)
+    const validTracks = response.items.filter(item => item.track !== null)
+    allTracks.push(...validTracks)
+    next = response.next
+  }
+
+  return allTracks
+}
+
+/**
+ * Fetch all liked/saved tracks with pagination
+ */
+export async function getAllLikedTracks(): Promise<SpotifySavedTrack[]> {
+  const client = SpotifyAPIClient.getInstance()
+  const allTracks: SpotifySavedTrack[] = []
+  let next: string | null = '/me/tracks?limit=50&market=US'
+
+  while (next) {
+    const endpoint = next.startsWith('http') ? next.replace(SPOTIFY_API_BASE, '') : next
+    const response = await client.fetchSpotifyApi<PaginatedResponse<SpotifySavedTrack>>(endpoint)
+    // Filter out null tracks
+    const validTracks = response.items.filter(item => item.track !== null)
+    allTracks.push(...validTracks)
+    next = response.next
+  }
+
+  return allTracks
+}
+
+/**
+ * Fetch all followed artists with pagination
+ */
+export async function getAllFollowedArtists(): Promise<SpotifyArtist[]> {
+  const client = SpotifyAPIClient.getInstance()
+  const allArtists: SpotifyArtist[] = []
+  let next: string | null = '/me/following?type=artist&limit=50'
+
+  while (next) {
+    const endpoint = next.startsWith('http') ? next.replace(SPOTIFY_API_BASE, '') : next
+    const response = await client.fetchSpotifyApi<{ artists: PaginatedResponse<SpotifyArtist> }>(endpoint)
+    allArtists.push(...response.artists.items)
+    next = response.artists.next
+  }
+
+  return allArtists
 }
 
 export { SpotifyAPIClient }
