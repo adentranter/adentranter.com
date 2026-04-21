@@ -1,5 +1,4 @@
 import Image from "next/image"
-import Link from "next/link"
 import { GitHubIcon } from "@/components/icons"
 import { GitHubContributions } from "@/components/github-contributions"
 import { CodingStats } from "@/components/coding-stats"
@@ -36,9 +35,11 @@ export const metadata: Metadata = {
   },
 }
 
+const HIDDEN_FROM_HOME = new Set(["ivf-journey", "mission-control"])
+
 export default function Home() {
   const featuredProjects = Object.values(projects)
-    .filter((p) => p.featured)
+    .filter((p) => p.featured && !HIDDEN_FROM_HOME.has(p.slug))
     .sort((a, b) => {
       // Keep twine first, then voxit, then others
       if (a.slug === 'twine') return -1
@@ -114,7 +115,7 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <Link href={`/projects/${project.slug}`} className="pt-8 block">
+                  <div className="pt-8 block">
                     {projectLabel && (
                       <h2 className="text-2xl mb-4 font-light">{projectLabel}</h2>
                     )}
@@ -125,12 +126,12 @@ export default function Home() {
                       height={1080} 
                       className="w-full" 
                     />
-                  </Link>
+                  </div>
                 </div>
               )}
 
               {/* Project Description */}
-              <div className="space-y-6">
+              <div className="space-y-2">
                 <h2 className="text-2xl mb-4 font-light"> &nbsp; </h2>
                 {LogoComponent && project.tagline ? (
                   <span className="leading-relaxed flex items-center gap-2">
@@ -171,12 +172,9 @@ export default function Home() {
                   {project.techStack && (
                     <p className="text-white/60">Tech Stack: {project.techStack}</p>
                   )}
-                  <Link 
-                    href={`/projects/${project.slug}`}
-                    className="text-primary hover:text-accent-secondary transition-colors inline-block"
-                  >
+                  <span className="text-white/40 cursor-not-allowed inline-block">
                     Learn more →
-                  </Link>
+                  </span>
                 </div>
               </div>
             </section>

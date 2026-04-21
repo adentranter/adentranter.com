@@ -61,13 +61,14 @@ export const projects: Record<string, ProjectMeta> = {
   'mission-control': {
     slug: 'mission-control',
     title: 'Mission Control',
-    description: 'IT business ticket and invoicing management system.',
-    blurb: 'Helping manage an IT business\'s ticket and invoicing system, streamlining operations from ticket creation to invoice generation. Hosted internally with robust redundancy and backup schemes, integrated with Office365 and Xero for seamless workflow automation.',
-    update: 'Heavily used production system with 20+ daily active users. Managing IT service tickets and automating invoicing workflows with continuous updates deployed via internally controlled CI/CD. Built on PostgreSQL with integrations to Office365 and Xero, ensuring reliable operations with comprehensive backup and redundancy.',
-    techStack: 'Next.js, React, PostgreSQL, Office365, Xero',
+    description: 'Internal system for managing service operations.',
+    blurb: 'A deliberately understated system that handles the day-to-day chaos of running an IT services business — from tracking work to keeping things moving.',
+    update: 'An actively used internal platform supporting business operations. Continuously evolving to improve efficiency, reduce manual work, and keep things running smoothly — without making a big deal about it.',
+    techStack: 'Next.js, React, PostgreSQL',
+    url:'behind firewall ;)',
     featured: true,
-    imagePath: '/screenshots/mission-control.jpg', // Placeholder - user will add image
-    logoImagePath: '/logos/mission-control-logo.png', // Placeholder - user will add logo
+    imagePath: '/screenshots/mission-control.jpg',
+    logoImagePath: '/logos/mission-control-logo.png',
     projectType: 'Desk Job',
     status: 'Production',
   },
