@@ -75,12 +75,6 @@ export default async function ProjectPage({
     notFound()
   }
 
-  const LogoComponent = project.logoComponent === 'voxit' 
-    ? Logo 
-    : project.logoComponent === 'twine'
-    ? TwineLogo
-    : null
-
   return (
     <div className="flex flex-col gap-16 py-16 max-w-6xl mx-auto px-4">
       {/* Back Link */}
@@ -94,9 +88,8 @@ export default async function ProjectPage({
       {/* Project Header */}
       <section className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-          {LogoComponent && (
-            <LogoComponent size="lg" />
-          )}
+          {project.logoComponent === 'voxit' && <Logo size="lg" />}
+          {project.logoComponent === 'twine' && <TwineLogo size="large" />}
           {project.logoImagePath && (
             <Image
               src={project.logoImagePath}

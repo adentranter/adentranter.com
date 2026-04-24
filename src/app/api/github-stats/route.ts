@@ -222,8 +222,11 @@ export async function GET() {
 
     // Calculate current streak from contribution calendar
     // Create a map of dates to contribution counts for quick lookup
-    const contributionMap = new Map(
-      contributions.map(c => [c.date, c.count])
+    const contributionMap = new Map<string, number>(
+      contributions.map((c): [string, number] => [
+        String(c.date),
+        Number(c.count),
+      ])
     )
     
     // Find the most recent day (could be today or yesterday depending on timezone)

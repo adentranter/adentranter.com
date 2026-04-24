@@ -152,7 +152,14 @@ export async function getCurrentlyPlaying() {
     const client = SpotifyAPIClient.getInstance()
     const data = await client.fetchSpotifyApi('/me/player/currently-playing')
     // Check if data is empty or doesn't have the expected structure
-    if (!data || Object.keys(data).length === 0 || !('item' in data)) {
+    if (data == null || typeof data !== 'object') {
+      return {
+        item: null,
+        is_playing: false,
+        progress_ms: null
+      }
+    }
+    if (Object.keys(data).length === 0 || !('item' in data)) {
       return {
         item: null,
         is_playing: false,
