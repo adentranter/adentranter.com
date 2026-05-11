@@ -9,6 +9,8 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/app/essays/[slug]': ['./src/app/essays/content/**/*'],
   },
+  output: 'standalone',
+
   images: {
     remotePatterns: [
       {
