@@ -1,11 +1,64 @@
 import { NextResponse } from 'next/server'
 
+const GITHUB_USER_LOGIN = 'adentranter'
+
+type RepoNode = Record<string, unknown> & { name: string }
+
+/** Shape returned from our repos GraphQL query (used after merge with org fullName). */
+type RepoForStats = RepoNode & {
+  fullName?: string
+  defaultBranchRef?: {
+    target?: {
+      history?: {
+        totalCount?: number
+        nodes?: { additions?: number; deletions?: number; committedDate?: string }[]
+      }
+    }
+  }
+  languages?: { edges?: { size: number; node: { name: string; color: string | null } }[] }
+}
+
+async function githubGraphql<T>(body: object, label: string): Promise<{ ok: true; json: T } | { ok: false; status: number; text: string }> {
+  const token = process.env.GITHUB_TOKEN
+  if (!token) {
+    console.error('GITHUB_TOKEN is not set')
+    return { ok: false, status: 500, text: 'missing token' }
+  }
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  const text = await res.text()
+  if (!res.ok) {
+    console.error(`GraphQL ${label} HTTP error:`, res.status, res.statusText, text.slice(0, 500))
+    return { ok: false, status: res.status, text }
+  }
+
+  try {
+    return { ok: true, json: JSON.parse(text) as T }
+  } catch {
+    console.error(`GraphQL ${label}: invalid JSON`, text.slice(0, 200))
+    return { ok: false, status: 502, text: 'invalid JSON' }
+  }
+}
+
 export async function GET() {
   try {
+    const token = process.env.GITHUB_TOKEN
+    if (!token) {
+      return NextResponse.json({ error: 'Server is missing GITHUB_TOKEN' }, { status: 500 })
+    }
+
     // Fetch basic user stats
-    const userResponse = await fetch('https://api.github.com/users/adentranter', {
+    const userResponse = await fetch(`https://api.github.com/users/${GITHUB_USER_LOGIN}`, {
       headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     })
     
@@ -15,12 +68,15 @@ export async function GET() {
     }
     
     const userData = await userResponse.json()
-    
-    // GraphQL query that includes both personal and organization repositories
-    const graphqlQuery = {
+
+    const since60d = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    // Split GraphQL: one huge query often hits GitHub execution timeouts (~502) as repos/orgs grow.
+    const contributionsQuery = {
       query: `
         query {
-          user(login: "adentranter") {
+          user(login: "${GITHUB_USER_LOGIN}") {
             contributionsCollection {
               contributionCalendar {
                 totalContributions
@@ -32,7 +88,16 @@ export async function GET() {
                 }
               }
             }
-            repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}) {
+          }
+        }
+      `,
+    }
+
+    const reposQuery = {
+      query: `
+        query {
+          user(login: "${GITHUB_USER_LOGIN}") {
+            repositories(first: 20, orderBy: {field: PUSHED_AT, direction: DESC}) {
               nodes {
                 name
                 pushedAt
@@ -48,7 +113,7 @@ export async function GET() {
                 defaultBranchRef {
                   target {
                     ... on Commit {
-                      history(first: 100, since: "${new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()}") {
+                      history(first: 50, since: "${since60d}") {
                         totalCount
                         nodes {
                           additions
@@ -61,10 +126,10 @@ export async function GET() {
                 }
               }
             }
-            organizations(first: 20) {
+            organizations(first: 10) {
               nodes {
                 login
-                repositories(first: 30, orderBy: {field: PUSHED_AT, direction: DESC}) {
+                repositories(first: 15, orderBy: {field: PUSHED_AT, direction: DESC}) {
                   nodes {
                     name
                     pushedAt
@@ -80,11 +145,12 @@ export async function GET() {
                     defaultBranchRef {
                       target {
                         ... on Commit {
-                          history(first: 30, since: "${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()}") {
+                          history(first: 25, since: "${since30d}") {
                             totalCount
                             nodes {
                               additions
                               deletions
+                              committedDate
                             }
                           }
                         }
@@ -96,40 +162,71 @@ export async function GET() {
             }
           }
         }
-      `
+      `,
     }
-    
-    // Fetch contribution data using GraphQL
-    const contributionsResponse = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(graphqlQuery),
-    })
 
-    if (!contributionsResponse.ok) {
-      console.error('GraphQL API error:', contributionsResponse.status, contributionsResponse.statusText)
-      const errorText = await contributionsResponse.text()
-      console.error('GraphQL error response:', errorText)
+    const [contributionsResult, reposResult] = await Promise.all([
+      githubGraphql<{
+        data?: { user?: { contributionsCollection: { contributionCalendar: unknown } } }
+        errors?: unknown[]
+      }>(contributionsQuery, 'contributions'),
+      githubGraphql<{
+        data?: {
+          user?: {
+            repositories: { nodes: RepoNode[] }
+            organizations: { nodes: { login: string; repositories?: { nodes: RepoNode[] } }[] }
+          }
+        }
+        errors?: unknown[]
+      }>(reposQuery, 'repos'),
+    ])
+
+    if (!contributionsResult.ok) {
       return NextResponse.json({ error: 'Failed to fetch contribution data' }, { status: 500 })
     }
 
-    const contributionsData = await contributionsResponse.json()
+    const contributionsData = contributionsResult.json
 
     if (contributionsData.errors) {
-      console.error('GraphQL errors:', contributionsData.errors)
+      console.error('GraphQL errors (contributions):', contributionsData.errors)
       return NextResponse.json({ error: 'GraphQL query errors', details: contributionsData.errors }, { status: 500 })
     }
 
-    if (!contributionsData.data?.user) {
-      console.error('No user data in response:', contributionsData)
+    if (!contributionsData.data?.user?.contributionsCollection) {
+      console.error('No user contribution data in response:', contributionsData)
       return NextResponse.json({ error: 'No user data found' }, { status: 500 })
     }
 
+    let repositories = { nodes: [] as RepoNode[] }
+    let organizations = { nodes: [] as { login: string; repositories?: { nodes: RepoNode[] } }[] }
+
+    if (reposResult.ok && !reposResult.json.errors && reposResult.json.data?.user) {
+      repositories = reposResult.json.data.user.repositories ?? repositories
+      organizations = reposResult.json.data.user.organizations ?? organizations
+    } else if (reposResult.ok && reposResult.json.errors) {
+      console.error('GraphQL errors (repos):', reposResult.json.errors)
+    } else if (!reposResult.ok) {
+      console.error('Repos GraphQL request failed; continuing with contribution-only stats')
+    }
+
+    const contributionsDataMerged = {
+      data: {
+        user: {
+          contributionsCollection: contributionsData.data!.user!.contributionsCollection,
+          repositories,
+          organizations,
+        },
+      },
+    }
+
+    type ContributionCalendar = {
+      totalContributions: number
+      weeks: { contributionDays: { contributionCount: number; date: string }[] }[]
+    }
+
     // Process contribution calendar data
-    const calendar = contributionsData.data.user.contributionsCollection.contributionCalendar
+    const calendar = contributionsDataMerged.data.user.contributionsCollection
+      .contributionCalendar as ContributionCalendar
     const contributions = calendar.weeks.flatMap((week: any) => 
       week.contributionDays.map((day: any) => ({
         count: day.contributionCount,
@@ -139,27 +236,29 @@ export async function GET() {
     )
 
     // Combine personal and organization repositories
-    const personalRepos = contributionsData.data.user.repositories?.nodes || []
-    const orgRepos = (contributionsData.data.user.organizations?.nodes || []).flatMap(org => 
-      (org.repositories?.nodes || []).map(repo => ({
-        ...repo,
-        fullName: `${org.login}/${repo.name}` // Add organization prefix for identification
-      }))
+    const personalRepos = (contributionsDataMerged.data.user.repositories?.nodes || []) as RepoForStats[]
+    const orgRepos = (contributionsDataMerged.data.user.organizations?.nodes || []).flatMap(org =>
+      (org.repositories?.nodes || []).map(
+        (repo): RepoForStats => ({
+          ...repo,
+          fullName: `${org.login}/${repo.name}`,
+        })
+      )
     )
-    
-    const allRepos = [...personalRepos, ...orgRepos]
+
+    const allRepos: RepoForStats[] = [...personalRepos, ...orgRepos]
     // Calculate language sizes across repositories
 
     // Calculate most active repo (based on commits in last 30 days)
-    const mostActiveRepo = allRepos.reduce((max, repo) => {
-      const commitCount = repo.defaultBranchRef?.target?.history?.totalCount || 0
-      return commitCount > (max.commitCount || 0)
-        ? { name: repo.fullName || repo.name, commitCount }
+    const mostActiveRepo = allRepos.reduce<{ name: string; commitCount: number }>((max, repo) => {
+      const commitCount = Number(repo.defaultBranchRef?.target?.history?.totalCount ?? 0)
+      return commitCount > max.commitCount
+        ? { name: String(repo.fullName ?? repo.name), commitCount }
         : max
     }, { name: '', commitCount: 0 })
 
     // Get total contributions for last 30 days
-    const thirtyDayContributions = contributionsData.data.user.contributionsCollection?.contributionCalendar?.totalContributions || 0
+    const thirtyDayContributions = calendar.totalContributions || 0
 
     // Calculate lines added/removed across different time periods
     // Also collect commit timestamps for hourly analysis
@@ -312,7 +411,7 @@ export async function GET() {
 
     // Calculate total commits across all repos (last 30 days)
     const totalCommits = allRepos.reduce((sum, repo) => {
-      return sum + (repo.defaultBranchRef?.target?.history?.totalCount || 0)
+      return sum + Number(repo.defaultBranchRef?.target?.history?.totalCount ?? 0)
     }, 0)
 
     // Calculate average contributions per day (all time)
