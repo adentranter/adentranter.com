@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
-import { getSpotifyData } from '@/lib/spotify'
 import { getRescueTimeStats } from '@/lib/rescuetime'
 
 export async function GET() {
   try {
-    const spotifyData = await getSpotifyData();
     const rescuetimeData = await getRescueTimeStats()
 
     return NextResponse.json({
@@ -22,13 +20,6 @@ export async function GET() {
         totalHours: Number(rescuetimeData?.week.totalHours || 0),
         averageProductivity: Number(rescuetimeData?.week.averageProductivity || 0),
         dailyAverageHours: Number(rescuetimeData?.week.dailyAverageHours || 0)
-      },
-      currentlyPlaying: spotifyData.currentlyPlaying,
-      recentlyPlayed: spotifyData.recentlyPlayed,
-      topTracks: {
-        weekly: spotifyData.topTracks.weekly || [],
-        monthly: spotifyData.topTracks.monthly || [],
-        yearly: spotifyData.topTracks.yearly || []
       }
     })
   } catch (error) {
@@ -48,15 +39,7 @@ export async function GET() {
         totalHours: 0,
         averageProductivity: 0,
         dailyAverageHours: 0
-      },
-      currentlyPlaying: null,
-      recentlyPlayed: [],
-      topTracks: {
-        weekly: [],
-        monthly: [],
-        yearly: []
       }
     }, { status: 500 })
   }
-} 
-
+}
