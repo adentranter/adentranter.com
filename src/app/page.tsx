@@ -3,8 +3,9 @@ import Link from "next/link"
 import { GitHubIcon } from "@/components/icons"
 import { GitHubContributions } from "@/components/github-contributions"
 import { CodingStats } from "@/components/coding-stats"
-import Logo from "@/components/voxlogo"
+import VoxLogo from "@/components/voxlogo"
 import { GitHubStats } from "@/components/github-stats"
+import { MailingListSignup } from "@/components/mailing-list-signup"
 import type { Metadata } from "next"
 import { projects } from "./projects/data"
 
@@ -54,8 +55,11 @@ export default function Home() {
 
       <section className="space-y-6 max-w-3xl mx-auto w-full px-4" aria-labelledby="projects-heading">
         <div className="text-center space-y-1">
-          <h2 id="projects-heading" className="text-2xl font-light">
-            Project
+          <div className="flex justify-center">
+            <VoxLogo size="lg" className="text-3xl" />
+          </div>
+          <h2 id="projects-heading" className="text-lg font-light text-white/80 uppercase tracking-[0.18em]">
+            Project Spotlight
           </h2>
           <p className="text-white/50 text-sm">
             Transcript proofreading — text and audio bound together.
@@ -93,7 +97,7 @@ export default function Home() {
           </div>
           <div className="p-6 flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline gap-3">
-              <Logo size="lg" />
+              <VoxLogo size="lg" />
               {vox.tagline ? (
                 <p className="text-sm text-white/50 tracking-wide">{vox.tagline}</p>
               ) : null}
@@ -111,6 +115,44 @@ export default function Home() {
             ) : null}
           </div>
         </article>
+      </section>
+
+      <div className="w-full h-px bg-primary/50" />
+
+      <section className="max-w-6xl mx-auto w-full px-4" aria-labelledby="stay-in-touch-heading">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <article className="rounded-xl border border-white/10 bg-accent/5 p-6 sm:p-7 space-y-3">
+            <h3 id="stay-in-touch-heading" className="text-xl font-semibold">
+              Stay in the loop
+            </h3>
+            <p className="text-sm text-white/70">
+              Drop your email and I&apos;ll share product updates, build notes, and occasional essays.
+            </p>
+            <MailingListSignup />
+          </article>
+
+          <article className="rounded-xl border border-white/10 bg-accent/5 p-6 sm:p-7 space-y-3">
+            <h3 className="text-xl font-semibold">My history so far</h3>
+            <p className="text-sm text-white/70">
+              If you&apos;re curious about my background, values, and how I think about startups and building,
+              start here.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="/about"
+                className="text-primary hover:text-accent-secondary transition-colors text-sm"
+              >
+                Read my story →
+              </Link>
+              <Link
+                href="/essays"
+                className="text-primary hover:text-accent-secondary transition-colors text-sm"
+              >
+                Browse essays →
+              </Link>
+            </div>
+          </article>
+        </div>
       </section>
 
       <div className="w-full h-px bg-primary/50" />

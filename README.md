@@ -51,6 +51,12 @@ PUSHER_SECRET=sk_xxxxx
 PUSHER_CLUSTER=ap1
 ```
 
+Mailing list signup (Neon):
+
+```
+NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+```
+
 Flow:
 - Visiting `/snes` redirects to a new session at `/snes/[session]`.
 - That page shows the game area, local/remote ROMs, and QR codes for controllers at `/snes/[session]/player/1` and `/snes/[session]/player/2`.
