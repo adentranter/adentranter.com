@@ -27,9 +27,9 @@ function hashIp(ip: string): string | null {
 }
 
 function challengeErrorMessage(reason: string | undefined): string {
-  if (reason === "expired") return "Riddle expired. Try a fresh one."
-  if (reason === "wrong") return "That isn't quite right. Try the riddle again."
-  return "Riddle could not be verified. Refresh and try again."
+  if (reason === "expired") return "Check expired. Grab a fresh problem."
+  if (reason === "wrong") return "That isn't quite right. Try the math problem again."
+  return "Check could not be verified. Refresh and try again."
 }
 
 function getClientIp(request: Request): string {

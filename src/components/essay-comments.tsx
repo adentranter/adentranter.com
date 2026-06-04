@@ -43,7 +43,7 @@ interface CommentListProps {
 function challengePromptText(loading: boolean, challenge: Challenge | null): string {
   if (loading) return "Loading..."
   if (challenge) return challenge.prompt
-  return "Riddle unavailable."
+  return "Check unavailable."
 }
 
 function CommentList({ loading, error, comments }: CommentListProps) {
@@ -115,13 +115,13 @@ export function EssayComments({ slug }: EssayCommentsProps) {
       const response = await fetch(`/api/essays/${slug}/comment-challenge`, { cache: "no-store" })
       const data = (await response.json()) as Challenge & { error?: string }
       if (!response.ok) {
-        throw new Error(data.error || "Could not load riddle.")
+        throw new Error(data.error || "Could not load check.")
       }
       setChallenge({ prompt: data.prompt, token: data.token })
       setAnswer("")
     } catch (error) {
       setChallenge(null)
-      setMessage(error instanceof Error ? error.message : "Could not load riddle.")
+      setMessage(error instanceof Error ? error.message : "Could not load check.")
       setSubmitState("error")
     } finally {
       setChallengeLoading(false)
@@ -136,7 +136,7 @@ export function EssayComments({ slug }: EssayCommentsProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!challenge) {
-      setMessage("Riddle is still loading. Try again in a moment.")
+      setMessage("Check is still loading. Try again in a moment.")
       setSubmitState("error")
       return
     }
@@ -235,23 +235,24 @@ export function EssayComments({ slug }: EssayCommentsProps) {
         <div className="rounded-md border border-white/10 bg-black/20 p-3">
           <div className="flex items-baseline justify-between gap-4 mb-2">
             <span className="text-xs uppercase tracking-wide text-white/55">
-              Quick riddle (proves you're human)
+              Quick check (proves you're human)
             </span>
             <button
               type="button"
               onClick={() => void loadChallenge()}
               className="text-xs text-white/55 underline-offset-2 hover:text-white/80 hover:underline"
             >
-              New riddle
+              New problem
             </button>
           </div>
           <p className="text-sm text-white/85 mb-2">{challengePromptText(challengeLoading, challenge)}</p>
           <input
-            type="text"
+            type="number"
+            inputMode="numeric"
             required
             value={answer}
             onChange={(event) => setAnswer(event.target.value)}
-            maxLength={120}
+            maxLength={6}
             placeholder="Your answer"
             className="w-full rounded-md border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-primary focus:outline-none"
           />

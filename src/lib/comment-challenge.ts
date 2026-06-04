@@ -1,32 +1,7 @@
-import { createHmac, timingSafeEqual } from "node:crypto"
-
-interface Riddle {
-  id: string
-  prompt: string
-  answers: string[]
-}
-
-const RIDDLES: Riddle[] = [
-  { id: "spider-legs", prompt: "How many legs does a spider have?", answers: ["8", "eight"] },
-  { id: "after-seven", prompt: "What number comes after seven?", answers: ["8", "eight"] },
-  { id: "days-week", prompt: "How many days are in a week?", answers: ["7", "seven"] },
-  { id: "sky-color", prompt: "What colour is a clear sky during the day?", answers: ["blue"] },
-  { id: "two-plus-two", prompt: "What is two plus two?", answers: ["4", "four"] },
-  { id: "opposite-hot", prompt: "What is the opposite of hot?", answers: ["cold"] },
-  { id: "snow-color", prompt: "What colour is snow?", answers: ["white"] },
-  { id: "fish-live", prompt: "Fish live in (one word).", answers: ["water", "the sea", "ocean", "sea"] },
-  { id: "sun-rises", prompt: "The sun rises in the ____ (direction).", answers: ["east"] },
-  { id: "cat-says", prompt: "What sound does a cat make?", answers: ["meow", "miaow", "miao"] },
-  { id: "wheels-bicycle", prompt: "How many wheels does a bicycle have?", answers: ["2", "two"] },
-  { id: "first-month", prompt: "What is the first month of the year?", answers: ["january", "jan"] },
-  { id: "ten-minus-three", prompt: "What is ten minus three?", answers: ["7", "seven"] },
-  { id: "ocean-or-mountain-water", prompt: "Which has water: ocean or mountain?", answers: ["ocean"] },
-  { id: "sky-or-ground-up", prompt: "Is the sky up or down?", answers: ["up"] },
-  { id: "bee-makes", prompt: "What sweet thing do bees make?", answers: ["honey"] },
-]
+import { createHmac, randomInt, timingSafeEqual } from "node:crypto"
 
 const TOKEN_TTL_MS = 15 * 60 * 1000
-const TOKEN_VERSION = "v1"
+const TOKEN_VERSION = "v2"
 
 export interface ChallengeIssue {
   prompt: string
@@ -46,14 +21,6 @@ function getSecret(): string {
   return secret
 }
 
-function pickRiddle(): Riddle {
-  return RIDDLES[Math.floor(Math.random() * RIDDLES.length)]
-}
-
-function findRiddle(id: string): Riddle | undefined {
-  return RIDDLES.find((riddle) => riddle.id === id)
-}
-
 function sign(payload: string): string {
   return createHmac("sha256", getSecret()).update(payload).digest("base64url")
 }
@@ -67,13 +34,35 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB)
 }
 
+interface MathProblem {
+  prompt: string
+  answer: number
+}
+
+function generateProblem(): MathProblem {
+  const op = randomInt(0, 3)
+  if (op === 0) {
+    const a = randomInt(1, 11)
+    const b = randomInt(1, 11)
+    return { prompt: `What is ${a} + ${b}?`, answer: a + b }
+  }
+  if (op === 1) {
+    const a = randomInt(2, 16)
+    const b = randomInt(1, a)
+    return { prompt: `What is ${a} - ${b}?`, answer: a - b }
+  }
+  const a = randomInt(2, 7)
+  const b = randomInt(2, 7)
+  return { prompt: `What is ${a} \u00d7 ${b}?`, answer: a * b }
+}
+
 export function createChallenge(): ChallengeIssue {
-  const riddle = pickRiddle()
+  const { prompt, answer } = generateProblem()
   const exp = Date.now() + TOKEN_TTL_MS
-  const payload = `${TOKEN_VERSION}.${riddle.id}.${exp}`
+  const payload = `${TOKEN_VERSION}.${answer}.${exp}`
   const sig = sign(payload)
   return {
-    prompt: riddle.prompt,
+    prompt,
     token: `${payload}.${sig}`,
   }
 }
@@ -86,11 +75,11 @@ export function verifyChallenge(token: string, answer: string): ChallengeVerifyR
   if (parts.length !== 4) {
     return { ok: false, reason: "invalid" }
   }
-  const [version, riddleId, expStr, sig] = parts
+  const [version, answerStr, expStr, sig] = parts
   if (version !== TOKEN_VERSION) {
     return { ok: false, reason: "invalid" }
   }
-  const expected = sign(`${version}.${riddleId}.${expStr}`)
+  const expected = sign(`${version}.${answerStr}.${expStr}`)
   if (!safeEqual(expected, sig)) {
     return { ok: false, reason: "invalid" }
   }
@@ -98,15 +87,12 @@ export function verifyChallenge(token: string, answer: string): ChallengeVerifyR
   if (!Number.isFinite(exp) || Date.now() > exp) {
     return { ok: false, reason: "expired" }
   }
-  const riddle = findRiddle(riddleId)
-  if (!riddle) {
+  const expectedAnswer = Number(answerStr)
+  if (!Number.isInteger(expectedAnswer)) {
     return { ok: false, reason: "invalid" }
   }
-  const normalized = answer.trim().toLowerCase()
-  if (!normalized) {
-    return { ok: false, reason: "wrong" }
-  }
-  if (!riddle.answers.some((accepted) => accepted.toLowerCase() === normalized)) {
+  const submitted = Number.parseInt(answer.trim(), 10)
+  if (!Number.isFinite(submitted) || submitted !== expectedAnswer) {
     return { ok: false, reason: "wrong" }
   }
   return { ok: true }

@@ -78,12 +78,12 @@ To force a sync without restarting the server:
 npm run sync:essays
 ```
 
-Comments are public and gated by a small signed riddle plus a honeypot field and
-a per-IP-per-hour rate limit. Routes:
+Comments are public and gated by a small signed math problem ("What is 7 + 4?")
+plus a honeypot field and a per-IP-per-hour rate limit. Routes:
 
-- `GET /api/essays/[slug]/comment-challenge` — issues a riddle + signed token.
+- `GET /api/essays/[slug]/comment-challenge` — issues a problem + signed token.
 - `GET /api/essays/[slug]/comments` — lists comments oldest-first.
-- `POST /api/essays/[slug]/comments` — validates the riddle and inserts.
+- `POST /api/essays/[slug]/comments` — validates the math answer and inserts.
 
 Required env vars:
 
@@ -93,6 +93,23 @@ COMMENT_CHALLENGE_SECRET=<random 32+ byte string>
 ```
 
 Generate a secret with `openssl rand -base64 48`.
+
+## Admin dashboard (`/forthelols`)
+
+A private dashboard lives at `/forthelols`. It shows DB-derived stats (mailing
+list signups, comments per essay, recent comments + delete button, essay sync
+status). It is gated by HTTP Basic Auth via [`src/proxy.ts`](src/proxy.ts).
+The same proxy also protects `/api/admin/*`.
+
+Required env vars:
+
+```
+ADMIN_USERNAME=<your choice>
+ADMIN_PASSWORD=<your choice>
+```
+
+If either is missing the dashboard returns 503. Browsers cache Basic Auth for
+the session, so you only get prompted once per browser window.
 
 Flow:
 - Visiting `/snes` redirects to a new session at `/snes/[session]`.
