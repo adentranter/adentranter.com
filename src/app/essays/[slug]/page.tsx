@@ -1,22 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
-import { promises as fs } from 'fs'
-import path from 'path'
 
-import { essays, type EssayMeta } from '../data'
-
-async function loadEssay(slug: string): Promise<{ meta: EssayMeta; content: string } | null> {
-  const meta = essays[slug]
-  if (!meta) {
-    return null
-  }
-
-  const filePath = path.join(process.cwd(), meta.contentPath)
-  const content = await fs.readFile(filePath, 'utf8')
-
-  return { meta, content }
-}
+import { EssayComments } from '@/components/essay-comments'
+import { getEssayBySlug } from '@/lib/essays'
 
 export async function generateMetadata({
   params,
@@ -24,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const essay = essays[slug]
+  const essay = await getEssayBySlug(slug)
 
   if (!essay) {
     return {
@@ -70,13 +57,11 @@ export default async function Page({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const loadedEssay = await loadEssay(slug)
+  const essay = await getEssayBySlug(slug)
 
-  if (!loadedEssay) {
+  if (!essay) {
     notFound()
   }
-
-  const { meta: essay, content } = loadedEssay
 
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
@@ -125,10 +110,12 @@ export default async function Page({
               ),
             }}
           >
-            {content}
+            {essay.body}
           </ReactMarkdown>
         </div>
       </article>
+
+      <EssayComments slug={essay.slug} />
     </div>
   )
 }

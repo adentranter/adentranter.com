@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { essays, EssayMeta } from './data'
 import { Metadata } from 'next'
+
+import { getListedEssays } from '@/lib/essays'
 
 export const metadata: Metadata = {
   title: 'Essays | Aden Tranter',
@@ -31,18 +32,20 @@ export const metadata: Metadata = {
 }
 
 export default async function EssaysPage() {
+  const essays = await getListedEssays()
+
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
       <h1 className="text-3xl font-bold mb-8">Essays</h1>
       <hr className="my-8 border-t border-white/10" />
 
       <div className="space-y-8">
-        {Object.values(essays)
-          .filter((essay) => essay.listed !== false)
+        {essays
+          .slice()
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          .map((essay: EssayMeta) => (
+          .map((essay) => (
             <article key={essay.slug} className="border-b border-white/10 pb-8">
-              <Link 
+              <Link
                 href={`/essays/${essay.slug}`}
                 className="block group"
               >

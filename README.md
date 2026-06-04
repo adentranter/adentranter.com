@@ -57,6 +57,43 @@ Mailing list signup (Neon):
 NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
 ```
 
+## Essays + comments
+
+Essay metadata lives in [`src/app/essays/data.ts`](src/app/essays/data.ts) and the
+markdown bodies live in [`src/app/essays/content/`](src/app/essays/content/).
+They are the source of truth; the server syncs them into the Neon `essays`
+table at startup (see [`src/instrumentation.ts`](src/instrumentation.ts) and
+[`src/lib/essays-sync.ts`](src/lib/essays-sync.ts)).
+
+To publish a new essay:
+
+1. Add the `.md` file under `src/app/essays/content/`.
+2. Add an entry to `essays` in `data.ts` with the matching `slug` and `contentPath`.
+3. Deploy (or restart the server). Sync runs once per process and only writes when
+   the content hash changes.
+
+To force a sync without restarting the server:
+
+```
+npm run sync:essays
+```
+
+Comments are public and gated by a small signed riddle plus a honeypot field and
+a per-IP-per-hour rate limit. Routes:
+
+- `GET /api/essays/[slug]/comment-challenge` — issues a riddle + signed token.
+- `GET /api/essays/[slug]/comments` — lists comments oldest-first.
+- `POST /api/essays/[slug]/comments` — validates the riddle and inserts.
+
+Required env vars:
+
+```
+NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+COMMENT_CHALLENGE_SECRET=<random 32+ byte string>
+```
+
+Generate a secret with `openssl rand -base64 48`.
+
 Flow:
 - Visiting `/snes` redirects to a new session at `/snes/[session]`.
 - That page shows the game area, local/remote ROMs, and QR codes for controllers at `/snes/[session]/player/1` and `/snes/[session]/player/2`.

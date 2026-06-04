@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
+
+import { getSql } from "@/lib/db"
+import { ensureSchema } from "@/lib/schema"
 
 const mailingListSchema = z.object({
   email: z.string().trim().email(),
@@ -10,9 +12,8 @@ const mailingListSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const databaseUrl = process.env.NEON_DATABASE_URL
-
-  if (!databaseUrl) {
+  const sql = getSql()
+  if (!sql) {
     return NextResponse.json(
       { error: "Mailing list is not configured yet." },
       { status: 503 }
@@ -27,25 +28,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please provide a valid email address." }, { status: 400 })
   }
 
-  const sql = neon(databaseUrl)
   const source = payload.source || "homepage"
   const userAgent = request.headers.get("user-agent")
   const referrer = request.headers.get("referer")
 
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS mailing_list_signups (
-        id BIGSERIAL PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        name TEXT,
-        notes TEXT,
-        source TEXT NOT NULL DEFAULT 'homepage',
-        user_agent TEXT,
-        referrer TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `
+    await ensureSchema(sql)
 
     await sql`
       INSERT INTO mailing_list_signups (email, name, notes, source, user_agent, referrer)

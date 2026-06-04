@@ -1,14 +1,16 @@
 import { NextRequest } from "next/server"
 
-export const runtime = "edge"
+import { getAllEssaySlugs } from "@/lib/essays"
+
+export const runtime = "nodejs"
 
 export async function GET(_req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://adentranter.com"
 
   const staticRoutes = ["/", "/about", "/essays"]
 
-  const { essays } = await import("../essays/data")
-  const essayRoutes = Object.values(essays).map((essay) => `/essays/${essay.slug}`)
+  const essaySlugs = await getAllEssaySlugs()
+  const essayRoutes = essaySlugs.map((slug) => `/essays/${slug}`)
 
   const { projects } = await import("../projects/data")
   const projectRoutes = Object.values(projects).map((project) => `/projects/${project.slug}`)
@@ -35,4 +37,4 @@ export async function GET(_req: NextRequest) {
       "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600", // 1 day edge cache
     },
   })
-} 
+}

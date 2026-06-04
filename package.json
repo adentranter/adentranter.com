@@ -9,7 +9,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:essays": "node --env-file=.env --import tsx scripts/sync-essays.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -48,6 +49,7 @@
     "eslint-config-next": "^16.2.6",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   },
   "overrides": {
