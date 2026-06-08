@@ -7,7 +7,14 @@ export const runtime = "nodejs"
 export async function GET(_req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://adentranter.com"
 
-  const staticRoutes = ["/", "/about", "/essays"]
+  const staticRoutes = [
+    "/",
+    "/about",
+    "/essays",
+    "/distractions",
+    "/distractions/photos",
+    "/distractions/woodworking",
+  ]
 
   const essaySlugs = await getAllEssaySlugs()
   const essayRoutes = essaySlugs.map((slug) => `/essays/${slug}`)

@@ -1,7 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Github, Linkedin, Instagram, Twitter } from "lucide-react"
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
+import { ChevronDown, Github, Linkedin, Instagram, Twitter } from "lucide-react"
+
+const distractionLinks = [
+  { label: "my photos", href: "/distractions/photos" },
+  { label: "woodworking", href: "/distractions/woodworking" },
+] as const
 
 export function Navbar() {
   return (
@@ -18,6 +24,39 @@ export function Navbar() {
           <Link href="/essays" className="text-white/70 transition-colors hover:text-primary">
             essays
           </Link>
+
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger
+              title="or overlapping venn diagrams"
+              className="inline-flex items-center gap-1 text-white/70 transition-colors hover:text-primary outline-none data-[state=open]:text-primary"
+            >
+              distractions
+              <ChevronDown className="h-4 w-4" />
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                className="z-50 min-w-[180px] rounded-lg border border-white/10 bg-slate-900/95 p-1 shadow-lg backdrop-blur"
+                sideOffset={8}
+                align="center"
+              >
+                {distractionLinks.map((link) => (
+                  <DropdownMenu.Item key={link.href} asChild>
+                    <Link
+                      href={link.href}
+                      className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-white/70 outline-none transition-colors hover:text-primary focus:bg-white/5 focus:text-primary cursor-pointer"
+                    >
+                      {link.label}
+                      {'soon' in link && link.soon && (
+                        <span className="text-xs text-white/40 ml-2">soon</span>
+                      )}
+                    </Link>
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+
           {false && (
             <Link href="/snes" className="text-white/70 transition-colors hover:text-primary">
               snes
@@ -49,4 +88,4 @@ export function Navbar() {
       </div>
     </header>
   )
-} 
+}
