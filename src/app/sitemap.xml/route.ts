@@ -14,6 +14,7 @@ export async function GET(_req: NextRequest) {
     "/distractions",
     "/distractions/photos",
     "/distractions/woodworking",
+    "/distractions/music",
   ]
 
   const essaySlugs = await getAllEssaySlugs()

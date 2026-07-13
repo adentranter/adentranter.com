@@ -65,4 +65,14 @@ export const essays: Record<string, EssayMeta> = {
       "A field report on building with QuickBooks APIs in Australia, exploring how developer experience and listening to users could help QuickBooks gain market share against larger competitors.",
     contentPath: 'src/app/essays/content/how-david-beats-goliath.md',
   },
+  'am-i-making-money-from-this': {
+    slug: 'am-i-making-money-from-this',
+    title:
+      'Am I making money from this, or how to ensure you leave things better than the last guy',
+    date: '2026-06-21',
+    excerpt:
+      "Draft notes — the share frame asks if you're capturing value. The harder question is whether you left the pond better, including ripples around corners you'll never see.",
+    listed: false,
+    contentPath: 'src/app/essays/content/am-i-making-money-from-this.md',
+  },
 }

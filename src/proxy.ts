@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { HOME_SESSION_COOKIE, verifySession } from "@/lib/home-auth"
+
 const REALM = "forthelols"
+const HOME_HOST = "home.adentranter.com"
 
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -41,7 +44,26 @@ function unauthorized(): NextResponse {
   })
 }
 
-export function proxy(request: NextRequest): NextResponse {
+function isHomePath(pathname: string): boolean {
+  return pathname === "/home" || pathname.startsWith("/home/")
+}
+
+function isPublicHomePath(pathname: string): boolean {
+  return pathname === "/home/login"
+}
+
+function isAdminPath(pathname: string): boolean {
+  return pathname === "/forthelols" || pathname.startsWith("/forthelols/") || pathname.startsWith("/api/admin/")
+}
+
+function resolveHomePathname(pathname: string, isHomeHost: boolean): string {
+  if (!isHomeHost || pathname.startsWith("/home")) {
+    return pathname
+  }
+  return pathname === "/" ? "/home" : `/home${pathname}`
+}
+
+function handleAdminAuth(request: NextRequest): NextResponse {
   const expectedUser = process.env.ADMIN_USERNAME
   const expectedPass = process.env.ADMIN_PASSWORD
 
@@ -66,6 +88,38 @@ export function proxy(request: NextRequest): NextResponse {
   return NextResponse.next()
 }
 
+export function proxy(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl
+
+  if (isAdminPath(pathname)) {
+    return handleAdminAuth(request)
+  }
+
+  const host = request.headers.get("host")?.split(":")[0] ?? ""
+  const isHomeHost = host === HOME_HOST
+  const effectivePathname = resolveHomePathname(pathname, isHomeHost)
+
+  if (isHomeHost && !pathname.startsWith("/home")) {
+    const url = request.nextUrl.clone()
+    url.pathname = effectivePathname
+    return NextResponse.rewrite(url)
+  }
+
+  const needsAuth = isHomePath(effectivePathname) && !isPublicHomePath(effectivePathname)
+
+  if (needsAuth) {
+    const session = request.cookies.get(HOME_SESSION_COOKIE)?.value
+    if (!verifySession(session)) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = "/home/login"
+      loginUrl.searchParams.set("next", effectivePathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
+  return NextResponse.next()
+}
+
 export const config = {
-  matcher: ["/forthelols/:path*", "/forthelols", "/api/admin/:path*"],
+  matcher: ["/home", "/home/:path*", "/forthelols", "/forthelols/:path*", "/api/admin/:path*"],
 }

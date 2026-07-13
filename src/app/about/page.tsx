@@ -1,5 +1,7 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
+import { MailingListSignup } from '@/components/mailing-list-signup'
+
 export const metadata: Metadata = {
   title: 'About | Aden Tranter',
   description: 'Trying to figure stuff out in Townsville, QLD.',
@@ -71,6 +73,35 @@ export default function AboutPage() {
             Maybe.
           </p>
         </div>
+
+        <div>
+          <h2 className="text-2xl font-semibold">Consulting</h2>
+          <p>
+            I&apos;m open to consulting work — product and engineering help for teams building web apps,
+            internal tools, or the weird problems that don&apos;t fit a neat brief. If that sounds useful,
+            reach out on{' '}
+            <a
+              href="https://linkedin.com/in/adentranter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-accent-secondary transition-colors"
+            >
+              LinkedIn
+            </a>.
+          </p>
+        </div>
+      </section>
+
+      <hr className="my-12 border-t border-white/10" />
+
+      <section className="max-w-md space-y-3" aria-labelledby="mailing-list-heading">
+        <h2 id="mailing-list-heading" className="text-2xl font-semibold">
+          Occasional updates
+        </h2>
+        <p className="text-white/70 text-sm">
+          Product notes, essays, and the odd build log — no spam, unsubscribe whenever.
+        </p>
+        <MailingListSignup source="about-page" />
       </section>
     </div>
   )

@@ -1,11 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
-import { GitHubIcon } from "@/components/icons"
-import { GitHubContributions } from "@/components/github-contributions"
 import { CodingStats } from "@/components/coding-stats"
 import VoxLogo from "@/components/voxlogo"
-import { GitHubStats } from "@/components/github-stats"
-import { MailingListSignup } from "@/components/mailing-list-signup"
+import { GitHubActivity } from "@/components/github-activity"
+import { NowPlaying } from "@/components/now-playing"
 import type { Metadata } from "next"
 import { projects } from "./projects/data"
 
@@ -119,16 +117,75 @@ export default function Home() {
 
       <div className="w-full h-px bg-primary/50" />
 
+      <section className="max-w-3xl mx-auto w-full px-4" aria-labelledby="other-sites-heading">
+        <div className="text-center space-y-1 mb-8">
+          <h2 id="other-sites-heading" className="text-lg font-light text-white/80 uppercase tracking-[0.18em]">
+            Other sites
+          </h2>
+          <p className="text-white/50 text-sm">A few more things I&apos;ve shipped.</p>
+        </div>
+
+        <ul className="space-y-3">
+          {[
+            projects['mail-your-mp'],
+            projects['legal-lookup'],
+          ].map((project) => {
+            const hostname = project.url ? new URL(project.url).hostname : null
+
+            return (
+              <li key={project.slug}>
+                <Link
+                  href={project.url || `/projects/${project.slug}`}
+                  target={project.url ? '_blank' : undefined}
+                  rel={project.url ? 'noopener noreferrer' : undefined}
+                  className="group flex items-baseline justify-between gap-6 rounded-lg border border-white/10 bg-accent/5 px-5 py-4 transition-colors hover:border-white/20 hover:bg-accent/10"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-base font-medium text-white group-hover:text-primary transition-colors">
+                        {project.title}
+                      </span>
+                      {hostname ? (
+                        <span className="text-xs text-white/35 group-hover:text-white/50 transition-colors">
+                          {hostname}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-white/55 leading-relaxed">{project.description}</p>
+                  </div>
+                  <span
+                    aria-hidden
+                    className="shrink-0 text-primary/70 group-hover:text-accent-secondary transition-colors"
+                  >
+                    →
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      <div className="w-full h-px bg-primary/50" />
+
       <section className="max-w-6xl mx-auto w-full px-4" aria-labelledby="stay-in-touch-heading">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <article className="rounded-xl border border-white/10 bg-accent/5 p-6 sm:p-7 space-y-3">
             <h3 id="stay-in-touch-heading" className="text-xl font-semibold">
-              Stay in the loop
+              Open to consulting
             </h3>
             <p className="text-sm text-white/70">
-              Drop your email and I&apos;ll share product updates, build notes, and occasional essays.
+              Product and engineering help for web apps, internal tools, and odd problems that need a
+              clear head. If that sounds useful, say hi.
             </p>
-            <MailingListSignup />
+            <Link
+              href="https://linkedin.com/in/adentranter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-accent-secondary transition-colors text-sm inline-flex w-fit"
+            >
+              Message me on LinkedIn →
+            </Link>
           </article>
 
           <article className="rounded-xl border border-white/10 bg-accent/5 p-6 sm:p-7 space-y-3">
@@ -157,18 +214,14 @@ export default function Home() {
 
       <div className="w-full h-px bg-primary/50" />
 
-      <section className="space-y-6 max-w-6xl mx-auto w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-8 bg-accent/5 space-y-4">
-            <div className="flex items-center gap-3">
-              <GitHubIcon className="w-6 h-6" />
-              <h3 className="text-2xl font-bold">GitHub Activity</h3>
-            </div>
-            <GitHubStats />
-            <GitHubContributions />
+      <section className="space-y-6 max-w-6xl mx-auto w-full px-4">
+        <NowPlaying />
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
+          <div className="border rounded-lg p-6 sm:p-8 bg-accent/5">
+            <GitHubActivity />
           </div>
 
-          <div className="border rounded-lg p-8 bg-accent/5">
+          <div className="border rounded-lg p-6 sm:p-8 bg-accent/5">
             <CodingStats />
           </div>
         </div>

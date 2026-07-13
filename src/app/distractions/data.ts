@@ -1,4 +1,4 @@
-export type DistractionSlug = 'photos' | 'woodworking'
+export type DistractionSlug = 'photos' | 'woodworking' | 'music'
 
 export interface DistractionCategory {
   slug: DistractionSlug
@@ -36,6 +36,12 @@ export const distractionCategories: DistractionCategory[] = [
     description: 'Projects, joints, and sawdust — things built with hands and patience.',
     status: 'active',
     coverImage: '/distractions/woodworking/blackwood-desk.jpg',
+  },
+  {
+    slug: 'music',
+    title: 'music',
+    description: "What I'm listening to lately — scrobbled from home, not Spotify.",
+    status: 'active',
   },
 ]
 

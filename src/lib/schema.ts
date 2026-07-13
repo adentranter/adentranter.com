@@ -55,4 +55,14 @@ async function runMigrations(sql: NeonQueryFunction<false, false>): Promise<void
     CREATE INDEX IF NOT EXISTS essay_comments_slug_created_at_idx
     ON essay_comments (essay_slug, created_at)
   `
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS home_ip (
+      id INT PRIMARY KEY DEFAULT 1,
+      ip TEXT NOT NULL,
+      user_agent TEXT,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT home_ip_singleton CHECK (id = 1)
+    )
+  `
 }

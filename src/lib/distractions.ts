@@ -10,6 +10,7 @@ import {
   type DistractionPhoto,
   type DistractionSlug,
 } from '@/app/distractions/data'
+import { getRecentTracks } from '@/lib/lastfm'
 
 const featuredPicksByCategory: Partial<
   Record<DistractionSlug, Array<{ stem: string; title?: string; layout?: DistractionPhoto['layout'] }>>
@@ -52,6 +53,8 @@ function applyFeaturedPicks(
 }
 
 async function listPhotosInCategory(slug: DistractionSlug): Promise<DistractionPhoto[]> {
+  if (slug === 'music') return []
+
   const dir = path.join(process.cwd(), 'public', 'distractions', slug)
 
   let entries
@@ -96,6 +99,11 @@ export async function getCoverImage(slug: DistractionSlug): Promise<string | und
   const category = getCategory(slug)
   if (category?.coverImage) return category.coverImage
 
+  if (slug === 'music') {
+    const recent = await getRecentTracks(1)
+    return recent[0]?.imageUrl || undefined
+  }
+
   const photos = await getPhotosByCategory(slug)
   return photos[0]?.imagePath
 }
@@ -114,7 +122,7 @@ export async function getActiveCategories(): Promise<
     categories.map(async (category) => ({
       ...category,
       photoCount:
-        category.status === 'coming-soon'
+        category.status === 'coming-soon' || category.slug === 'music'
           ? 0
           : (await getPhotosByCategory(category.slug)).length,
     }))

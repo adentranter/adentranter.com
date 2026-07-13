@@ -7,6 +7,7 @@ import { ChevronDown, Github, Linkedin, Instagram, Twitter } from "lucide-react"
 const distractionLinks = [
   { label: "my photos", href: "/distractions/photos" },
   { label: "woodworking", href: "/distractions/woodworking" },
+  { label: "music", href: "/distractions/music" },
 ] as const
 
 export function Navbar() {

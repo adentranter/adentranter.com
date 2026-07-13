@@ -32,7 +32,7 @@ export function CategoryCard({ category, photoCount, coverImage }: CategoryCardP
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/30 text-sm">
-            {isComingSoon ? 'coming soon' : 'no photos yet'}
+            {isComingSoon ? 'coming soon' : category.slug === 'music' ? '♪' : 'no photos yet'}
           </div>
         )}
         {isComingSoon && (

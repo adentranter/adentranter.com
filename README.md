@@ -57,6 +57,17 @@ Mailing list signup (Neon):
 NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
 ```
 
+Music / Last.fm (homepage now-playing + `/distractions/music`):
+
+Point Navidrome (or another player) at Last.fm scrobbling, then set:
+
+```
+LASTFM_API_KEY=<from https://www.last.fm/api/account/create>
+LASTFM_USERNAME=<your last.fm username>
+```
+
+Without these, the music widgets stay hidden.
+
 ## Essays + comments
 
 Essay metadata lives in [`src/app/essays/data.ts`](src/app/essays/data.ts) and the
@@ -99,7 +110,7 @@ Generate a secret with `openssl rand -base64 48`.
 A private dashboard lives at `/forthelols`. It shows DB-derived stats (mailing
 list signups, comments per essay, recent comments + delete button, essay sync
 status). It is gated by HTTP Basic Auth via [`src/proxy.ts`](src/proxy.ts).
-The same proxy also protects `/api/admin/*`.
+The same proxy also protects `/api/admin/*` and `/home/*`.
 
 Required env vars:
 
@@ -110,6 +121,44 @@ ADMIN_PASSWORD=<your choice>
 
 If either is missing the dashboard returns 503. Browsers cache Basic Auth for
 the session, so you only get prompted once per browser window.
+
+## Home dashboard (`/home`)
+
+A password-protected media server dashboard lives at `/home` (or
+`home.adentranter.com` once the subdomain is pointed at Vercel — add a Vercel
+redirect from `home.adentranter.com` to `https://adentranter.com/home`).
+link to public HTTPS subdomains; admin tools link to LAN-only addresses and
+are not exposed to the internet.
+
+Your home server reports its current public IP to the site via a cron job.
+The dashboard displays the latest IP and last-seen time.
+
+### Environment variables
+
+```
+NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+HOME_IP_KEY=<random string for the home-server cron job>
+HOME_DASHBOARD_PASSWORD=<shared password for you and friends>
+HOME_DASHBOARD_SECRET=<random 32+ byte string for signing session cookies>
+```
+
+Generate secrets with `openssl rand -base64 48`.
+
+### Home-server cron (every 5 minutes)
+
+```bash
+*/5 * * * * curl -fsS -X POST -H "x-home-ip-key: $HOME_IP_KEY" https://adentranter.com/api/home-ip >/dev/null
+```
+
+The route derives the caller IP from `x-forwarded-for` (or accepts an optional
+`{"ip":"1.2.3.4"}` body override for testing). Send the key via the
+`x-home-ip-key` header or `Authorization: Bearer` — never in the query string.
+
+### Routes
+
+- `POST /api/home-ip` — upserts the home public IP (requires `HOME_IP_KEY`).
+- `POST /api/home/login` — sets the signed `home_session` cookie.
+- `POST /api/home/logout` — clears the session cookie.
 
 Flow:
 - Visiting `/snes` redirects to a new session at `/snes/[session]`.

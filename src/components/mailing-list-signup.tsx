@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react"
 
 type SubmitState = "idle" | "submitting" | "success" | "error"
 
-export function MailingListSignup() {
+export function MailingListSignup({ source = "about-page" }: { source?: string }) {
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [submitState, setSubmitState] = useState<SubmitState>("idle")
@@ -22,7 +22,7 @@ export function MailingListSignup() {
         body: JSON.stringify({
           email,
           name,
-          source: "homepage-callout",
+          source,
         }),
       })
 
