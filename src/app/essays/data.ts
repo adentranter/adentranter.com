@@ -75,4 +75,13 @@ export const essays: Record<string, EssayMeta> = {
     listed: false,
     contentPath: 'src/app/essays/content/am-i-making-money-from-this.md',
   },
+  'why-we-oil-gearboxes': {
+    slug: 'why-we-oil-gearboxes',
+    title: 'Why We Oil Gearboxes, or Why Telstra Stopped Checking the Oil',
+    date: '2026-07-22',
+    excerpt:
+      'A damaged iPhone, a ported number and six Telstra systems with no shared reality — what happens when profitable companies stop maintaining the machinery beneath them.',
+    listed: false,
+    contentPath: 'src/app/essays/content/why-we-oil-gearboxes.md',
+  },
 }

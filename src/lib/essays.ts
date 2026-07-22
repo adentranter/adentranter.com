@@ -71,22 +71,28 @@ export async function getListedEssays(): Promise<EssaySummary[]> {
   }
 }
 
+function fallbackListedSlugs(): string[] {
+  return Object.values(essayRegistry)
+    .filter((essay) => essay.listed !== false)
+    .map((essay) => essay.slug)
+}
+
 export async function getAllEssaySlugs(): Promise<string[]> {
   const sql = getSql()
   if (!sql) {
-    return Object.keys(essayRegistry)
+    return fallbackListedSlugs()
   }
 
   try {
     await ensureSchema(sql)
-    const rows = await sql`SELECT slug FROM essays ORDER BY published_on DESC`
+    const rows = await sql`SELECT slug FROM essays WHERE listed = TRUE ORDER BY published_on DESC`
     if (rows.length === 0) {
-      return Object.keys(essayRegistry)
+      return fallbackListedSlugs()
     }
     return rows.map((row) => row.slug as string)
   } catch (error) {
     console.error("[essays] getAllEssaySlugs failed", error)
-    return Object.keys(essayRegistry)
+    return fallbackListedSlugs()
   }
 }
 
