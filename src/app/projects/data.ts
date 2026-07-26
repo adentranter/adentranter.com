@@ -85,7 +85,7 @@ export const projects: Record<string, ProjectMeta> = {
     description: 'A guided launch engine for Australian businesses — one profile, one workflow, one dashboard.',
     blurb:
       'One profile, one workflow, one dashboard — from idea through setup to first payment, without juggling half a dozen government and accounting tabs.',
-    url: 'https://launchos.adentranter.com',
+    url: 'https://launchos.com.au',
     techStack: 'Next.js, React, Prisma',
     featured: true,
     tagline: 'From idea to first payment.',
