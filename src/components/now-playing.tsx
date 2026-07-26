@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-import type { MusicTrack } from '@/lib/lastfm'
+import type { MusicTrack } from '@adentranter/music-api/types'
 
 type MusicPayload = {
   configured: boolean

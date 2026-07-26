@@ -57,16 +57,28 @@ Mailing list signup (Neon):
 NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
 ```
 
-Music / Last.fm (homepage now-playing + `/distractions/music`):
+Music / Navidrome (homepage now-playing + `/distractions/music`):
 
-Point Navidrome (or another player) at Last.fm scrobbling, then set:
+Point this site at your home Navidrome instance (Subsonic API). Prefer a public
+hostname that exposes more than the Substreamer web UI — Vercel needs
+`/rest/*` (now playing + cover art) and `/api/*` (recent listens) reachable.
+
+```
+NAVIDROME_URL=https://media.adentranter.com
+NAVIDROME_USER=<navidrome username>
+NAVIDROME_PASSWORD=<navidrome password>
+```
+
+Optional Last.fm fallback (used only when Navidrome env vars are missing):
 
 ```
 LASTFM_API_KEY=<from https://www.last.fm/api/account/create>
 LASTFM_USERNAME=<your last.fm username>
 ```
 
-Without these, the music widgets stay hidden.
+Without Navidrome or Last.fm credentials, the music widgets stay hidden.
+
+The small workspace package lives at [`packages/music-api`](packages/music-api).
 
 ## Essays + comments
 

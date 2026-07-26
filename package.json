@@ -5,6 +5,9 @@
   "engines": {
     "node": "22.x"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -13,6 +16,7 @@
     "sync:essays": "node --env-file=.env --import tsx scripts/sync-essays.ts"
   },
   "dependencies": {
+    "@adentranter/music-api": "*",
     "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-navigation-menu": "^1.2.5",

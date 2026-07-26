@@ -3,25 +3,21 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { getCategory } from '../data'
-import {
-  getLastFmProfileUrl,
-  getNowPlaying,
-  getRecentTracks,
-  isLastFmConfigured,
-} from '@/lib/lastfm'
+import { getListening, getMusicSource } from '@/lib/music'
+import { getLastFmProfileUrl } from '@/lib/lastfm'
 
 export const revalidate = 60
 
 const category = getCategory('music')!
 
 export const metadata: Metadata = {
-  title: 'Music | Distractions | Aden Tranter',
+  title: 'Music | Distracted | Aden Tranter',
   description: category.description,
   alternates: {
     canonical: 'https://adentranter.com/distractions/music',
   },
   openGraph: {
-    title: 'Music | Distractions | Aden Tranter',
+    title: 'Music | Distracted | Aden Tranter',
     description: category.description,
     url: 'https://adentranter.com/distractions/music',
     type: 'website',
@@ -36,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Music | Distractions | Aden Tranter',
+    title: 'Music | Distracted | Aden Tranter',
     description: category.description,
     images: ['/adentranter.jpg'],
   },
@@ -55,11 +51,10 @@ function formatPlayedAt(iso: string | null): string | null {
 }
 
 export default async function MusicPage() {
-  const configured = isLastFmConfigured()
-  const [nowPlaying, recent] = configured
-    ? await Promise.all([getNowPlaying(), getRecentTracks(20)])
-    : [null, []]
-  const profileUrl = getLastFmProfileUrl()
+  const source = getMusicSource()
+  const { configured, nowPlaying, recent } = await getListening(20)
+  const profileUrl = source === 'lastfm' ? getLastFmProfileUrl() : null
+  const navidromeUrl = process.env.NAVIDROME_URL?.replace(/\/+$/, '') || null
   const history = recent.filter((track) => !track.nowPlaying)
 
   return (
@@ -77,9 +72,13 @@ export default async function MusicPage() {
 
       {!configured ? (
         <p className="text-white/60 text-sm">
-          Listening history isn&apos;t wired up yet. Point Navidrome (or anything else) at Last.fm
-          scrobbling, then set <code className="text-white/80">LASTFM_API_KEY</code> and{' '}
-          <code className="text-white/80">LASTFM_USERNAME</code>.
+          Listening history isn&apos;t wired up yet. Set{' '}
+          <code className="text-white/80">NAVIDROME_URL</code>,{' '}
+          <code className="text-white/80">NAVIDROME_USER</code>, and{' '}
+          <code className="text-white/80">NAVIDROME_PASSWORD</code> so this site can read from your
+          media server. Make sure Nginx Proxy Manager exposes Navidrome&apos;s{' '}
+          <code className="text-white/80">/rest/*</code> and <code className="text-white/80">/api/*</code>{' '}
+          paths publicly (not only the Substreamer web UI).
         </p>
       ) : (
         <div className="space-y-10">
@@ -133,12 +132,12 @@ export default async function MusicPage() {
           <section className="space-y-4">
             <h2 className="text-sm uppercase tracking-[0.18em] text-white/45">Recent listens</h2>
             {history.length === 0 ? (
-              <p className="text-white/55 text-sm">No recent scrobbles yet.</p>
+              <p className="text-white/55 text-sm">No recent listens yet.</p>
             ) : (
               <ul className="divide-y divide-white/10 rounded-xl border border-white/10 overflow-hidden">
                 {history.map((track, index) => (
                   <li
-                    key={`${track.name}-${track.artist}-${track.playedAt}-${index}`}
+                    key={`${track.id || track.name}-${track.artist}-${track.playedAt}-${index}`}
                     className="flex items-center gap-3 px-4 py-3 bg-accent/5"
                   >
                     <div className="relative size-12 shrink-0 overflow-hidden rounded bg-white/5">
@@ -178,6 +177,21 @@ export default async function MusicPage() {
               </ul>
             )}
           </section>
+
+          {source === 'navidrome' && navidromeUrl ? (
+            <p className="text-sm text-white/45">
+              Streaming from{' '}
+              <Link
+                href={navidromeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-accent-secondary transition-colors"
+              >
+                Navidrome
+              </Link>
+              .
+            </p>
+          ) : null}
 
           {profileUrl ? (
             <p className="text-sm text-white/45">
