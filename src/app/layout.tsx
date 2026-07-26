@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google"
+import { Fraunces, Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import AppFrame from "@/components/layout/app-frame"
 import FireflyCursor from "@/components/layout/firefly-cursor"
@@ -6,10 +6,16 @@ import { Analytics } from "@vercel/analytics/react"
 import Script from "next/script"
 import "./globals.css"
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: 'swap',
+  display: "swap",
+})
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
 })
 export const metadata = {
   title: "Aden Tranter | Townsville, QLD | types characters",
@@ -43,7 +49,9 @@ export default function RootLayout({
           </Script>
         </>
       )}
-      <body className={`${inter.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}>
+      <body
+        className={`${inter.variable} ${fraunces.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

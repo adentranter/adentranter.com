@@ -62,7 +62,7 @@ export function CodingStats() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 text-white">
         <ChartIcon className="w-6 h-6" />
         <h3 className="text-2xl font-bold">Daily Activity</h3>
       </div>

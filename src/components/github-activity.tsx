@@ -131,7 +131,7 @@ export function GitHubActivity() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-white">
           <GitHubIcon className="w-6 h-6" />
           <div>
             <h3 className="text-2xl font-bold">GitHub</h3>

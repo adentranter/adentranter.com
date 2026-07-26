@@ -9,10 +9,25 @@ export interface ProjectMeta {
   techStack?: string
   featured: boolean
   tagline?: string
+  byline?: string
+  audience?: string
   logoComponent?: 'voxit' | 'twine'
   logoImagePath?: string
   projectType: 'Company' | 'Desk Job' | 'Open Source' | 'Experiment'
   status: 'POC - MVP' | 'Planning' | 'Dead in the water' | 'Production' | 'Open Source' | 'Experiment'
+}
+
+export type HomepageBrandKey =
+  | 'voxit'
+  | 'legal-lookup'
+  | 'founder-agreements'
+  | 'launchos'
+  | 'mail-your-mp'
+
+export type HomepageProject = {
+  slug: HomepageBrandKey
+  /** Tailwind classes for the card shell background. */
+  cardClassName: string
 }
 
 export const projects: Record<string, ProjectMeta> = {
@@ -20,13 +35,16 @@ export const projects: Record<string, ProjectMeta> = {
     slug: 'voxit',
     title: 'Voxit',
     description: 'Transcript proofreading; binding text and audio for easy proofreading.',
-    blurb: 'Fast transcription with WhisperX and LLaMA, plus a proofreading workflow where text and audio stay linked so you can verify and fix lines without losing the thread.',
+    blurb:
+      'Audio-linked editing for Australian court transcription — less rewinding, less reformatting, more billable hours. Text and audio stay bound so you can verify and fix lines without losing the thread.',
     update: 'Currently in active development with continuous improvements to transcription accuracy and proofreading capabilities.',
     url: 'https://voxit.com.au',
     imagePath: '/screenshots/voxit.png',
     techStack: 'Next.js, React, Supabase, Tauri',
     featured: true,
     tagline: 'Transcript proofreading',
+    byline: 'Finish transcripts faster. Get paid more per hour.',
+    audience: 'Australian court transcriptionists and agencies who need audio-linked editing, less rewinding, and more billable hours.',
     logoComponent: 'voxit',
     projectType: 'Company',
     status: 'POC - MVP',
@@ -45,6 +63,37 @@ export const projects: Record<string, ProjectMeta> = {
     projectType: 'Company',
     status: 'Dead in the water',
   },
+  'founder-agreements': {
+    slug: 'founder-agreements',
+    title: 'Founder Config',
+    description: 'From handshake to a documented deal — configure roles, equity, control, and vesting.',
+    blurb:
+      'Answer a short smart intake — roles, equity, control, and vesting fill in from sensible defaults — then copy a plain-English term sheet for your lawyer. Not legal advice; an opinionated fairness configurator.',
+    url: 'https://founderagreements.adentranter.com/',
+    imagePath: '/screenshots/founder-agreements.jpg',
+    techStack: 'Next.js, React',
+    featured: true,
+    tagline: 'Handshake to agreement',
+    byline: 'From handshake to a documented deal.',
+    audience: 'Co-founders and early teams who need a clear, fair starting deal before lawyers draft the paperwork.',
+    projectType: 'Experiment',
+    status: 'Production',
+  },
+  launchos: {
+    slug: 'launchos',
+    title: 'LaunchOS',
+    description: 'A guided launch engine for Australian businesses — one profile, one workflow, one dashboard.',
+    blurb:
+      'One profile, one workflow, one dashboard — from idea through setup to first payment, without juggling half a dozen government and accounting tabs.',
+    url: 'https://launchos.adentranter.com',
+    techStack: 'Next.js, React, Prisma',
+    featured: true,
+    tagline: 'From idea to first payment.',
+    byline: 'From idea to first payment.',
+    audience: 'Australian founders launching a new business who want a guided path instead of a checklist scavenger hunt.',
+    projectType: 'Company',
+    status: 'POC - MVP',
+  },
   'mail-your-mp': {
     slug: 'mail-your-mp',
     title: 'Mail Your MP',
@@ -52,8 +101,13 @@ export const projects: Record<string, ProjectMeta> = {
     blurb:
       "Pick an issue, we figure out who's responsible, and send a physical letter to your MP for you — one person, one letter, one politician.",
     url: 'https://mailyourmp.com.au',
+    imagePath: '/screenshots/mail-your-mp.png',
     techStack: 'Next.js, React',
     featured: true,
+    tagline: 'Physical letters to your MP',
+    byline: 'Sick of waiting? Mail your MP.',
+    audience:
+      "Australians who want a real letter on an issue to land on their MP's desk — without writing, printing, or posting it themselves.",
     projectType: 'Experiment',
     status: 'Production',
   },
@@ -61,11 +115,14 @@ export const projects: Record<string, ProjectMeta> = {
     slug: 'legal-lookup',
     title: 'Legal Lookup',
     description: 'Australian legal information lookup.',
-    blurb: 'A tool for looking up Australian legal information without the usual maze of PDFs and dead ends.',
+    blurb:
+      'Search Australian laws, courts, judges, and courthouses in one place — without the usual maze of PDFs, fragmented portals, and dead ends.',
     url: 'https://legallookup.com.au',
     techStack: 'Next.js, React',
     featured: true,
-    logoImagePath: '/logos/legal-lookup-logo.png',
+    tagline: 'Australian legal search',
+    byline: 'Search Australian laws, courts, judges, and courthouses in one place.',
+    audience: 'Researchers, solicitors, and curious citizens who need Australian legal information without hunting PDFs and dead ends.',
     projectType: 'Experiment',
     status: 'POC - MVP',
   },
@@ -96,3 +153,30 @@ export const projects: Record<string, ProjectMeta> = {
   },
 }
 
+export const homepageProjects: HomepageProject[] = [
+  {
+    slug: 'voxit',
+    cardClassName:
+      'border-[#8B1C2C]/35 bg-gradient-to-br from-[#2a1218] via-[#1a0f14] to-[#12161f]',
+  },
+  {
+    slug: 'legal-lookup',
+    cardClassName:
+      'border-[#0f96b8]/35 bg-gradient-to-br from-[#082a59]/80 via-[#0a1f3a] to-[#0d2430]',
+  },
+  {
+    slug: 'founder-agreements',
+    cardClassName:
+      'border-[#2f6fe0]/30 bg-gradient-to-br from-[#15233a] via-[#121a2a] to-[#0f1f1c]',
+  },
+  {
+    slug: 'launchos',
+    cardClassName:
+      'border-[#0f9f6e]/35 bg-gradient-to-br from-[#0f1f28] via-[#12241f] to-[#132033]',
+  },
+  {
+    slug: 'mail-your-mp',
+    cardClassName:
+      'border-[#F7AF02]/30 bg-gradient-to-br from-[#004A31]/90 via-[#0a2a20] to-[#121a16]',
+  },
+]

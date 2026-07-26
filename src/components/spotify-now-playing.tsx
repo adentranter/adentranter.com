@@ -43,7 +43,7 @@ export function SpotifyNowPlaying() {
 
   return (
     <div className="border rounded-lg p-6 bg-accent/5">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="mb-4 flex items-center gap-3 text-white">
         <SpotifyIcon className="w-6 h-6" />
         <h3 className="text-xl font-bold">Now Playing</h3>
       </div>
