@@ -20,7 +20,7 @@ export function NowPlaying() {
 
     const load = async () => {
       try {
-        const response = await fetch('/api/music/now-playing')
+        const response = await fetch('/api/music/now-playing', { cache: 'no-store' })
         const payload = (await response.json()) as MusicPayload
         if (!cancelled) setData(payload)
       } catch (error) {

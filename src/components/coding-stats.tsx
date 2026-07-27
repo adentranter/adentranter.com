@@ -32,7 +32,7 @@ export function CodingStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/coding-stats')
+        const response = await fetch('/api/coding-stats', { cache: 'no-store' })
         const data = await response.json()
         setStats(data)
         setLastUpdated(new Date())
