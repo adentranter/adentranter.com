@@ -29,6 +29,7 @@ export default function RootLayout({
 }) {
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID
   const enableGA = process.env.NODE_ENV === 'production' && !!GA_ID
+  const enableUmami = process.env.NODE_ENV === 'production'
   return (
     <html lang="en" suppressHydrationWarning>
       {enableGA && (
@@ -48,6 +49,14 @@ export default function RootLayout({
             `}
           </Script>
         </>
+      )}
+      {enableUmami && (
+        <Script
+          defer
+          src="https://analytics.adentranter.com/script.js"
+          data-website-id="0f5ab51f-333b-405e-b3ee-d5471864cce2"
+          strategy="afterInteractive"
+        />
       )}
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}
