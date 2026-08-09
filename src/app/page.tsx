@@ -4,31 +4,27 @@ import { GitHubActivity } from "@/components/github-activity"
 import { HomepageProjects } from "@/components/home/homepage-projects"
 import { NowPlaying } from "@/components/now-playing"
 import type { Metadata } from "next"
+import { SITE_DESCRIPTION, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site"
 
 export const metadata: Metadata = {
-  title: "Aden Tranter - Software Engineer & Problem Solver",
-  description:
-    "Software engineer specializing in solving unique problems through code and curiosity.",
+  title: { absolute: SITE_TITLE },
+  description: SITE_DESCRIPTION,
   keywords: ["software engineer", "web development", "Voxit", "transcript proofreading"],
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
-    title: "Aden Tranter - Software Engineer & Problem Solver",
-    description: "Software engineer specializing in solving unique problems through code and curiosity.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     type: "website",
-    url: "https://adentranter.com",
-    images: [
-      {
-        url: "/adentranter.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Aden Tranter",
-      },
-    ],
+    url: SITE_URL,
+    images: [SITE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Aden Tranter - Software Engineer & Problem Solver",
-    description: "Software engineer specializing in solving unique problems through code and curiosity.",
-    images: ["/adentranter.jpg"],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [SITE_OG_IMAGE.url],
   },
 }
 

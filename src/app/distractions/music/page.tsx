@@ -11,15 +11,15 @@ export const revalidate = 60
 const category = getCategory('music')!
 
 export const metadata: Metadata = {
-  title: 'Music | Distracted | Aden Tranter',
+  title: 'Music | Distracted',
   description: category.description,
   alternates: {
-    canonical: 'https://adentranter.com/distractions/music',
+    canonical: '/distractions/music',
   },
   openGraph: {
     title: 'Music | Distracted | Aden Tranter',
     description: category.description,
-    url: 'https://adentranter.com/distractions/music',
+    url: '/distractions/music',
     type: 'website',
     images: [
       {

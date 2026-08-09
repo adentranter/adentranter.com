@@ -1,5 +1,9 @@
-'use client'
+import type { Metadata } from "next"
 
+export const metadata: Metadata = {
+  title: "Page Not Found",
+  robots: { index: false, follow: false },
+}
 
 export default function NotFound() {
   return (
@@ -14,7 +18,6 @@ export default function NotFound() {
         <p className="mb-8 text-gray-600 dark:text-gray-400">
           Sorry, we couldn&apos;t find the page you&apos;re looking for.
         </p>
-       
       </div>
     </div>
   )

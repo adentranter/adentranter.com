@@ -20,22 +20,25 @@ export async function generateMetadata({
 
   if (!project) {
     return {
-      title: 'Project Not Found | Aden Tranter',
+      title: 'Project Not Found',
       description: 'The requested project could not be found.',
+      robots: { index: false, follow: false },
     }
   }
 
+  const path = `/projects/${slug}`
+
   return {
-    title: `${project.title} | Aden Tranter`,
+    title: project.title,
     description: project.description || project.blurb,
     alternates: {
-      canonical: `https://adentranter.com/projects/${slug}`,
+      canonical: path,
     },
     openGraph: {
       title: `${project.title} | Aden Tranter`,
       description: project.description || project.blurb,
       type: 'website',
-      url: `https://adentranter.com/projects/${slug}`,
+      url: path,
       images: project.imagePath
         ? [
             {

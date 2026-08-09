@@ -13,15 +13,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const coverImage = (await getCoverImage('woodworking')) || '/adentranter.jpg'
 
   return {
-    title: 'Woodworking | Distractions | Aden Tranter',
+    title: 'Woodworking | Distracted',
     description: category.description,
     alternates: {
-      canonical: 'https://adentranter.com/distractions/woodworking',
+      canonical: '/distractions/woodworking',
     },
     openGraph: {
-      title: 'Woodworking | Distractions | Aden Tranter',
+      title: 'Woodworking | Distracted | Aden Tranter',
       description: category.description,
-      url: 'https://adentranter.com/distractions/woodworking',
+      url: '/distractions/woodworking',
       type: 'website',
       images: [
         {
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Woodworking | Distractions | Aden Tranter',
+      title: 'Woodworking | Distracted | Aden Tranter',
       description: category.description,
       images: [coverImage],
     },

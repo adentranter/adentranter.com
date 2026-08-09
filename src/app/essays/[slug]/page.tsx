@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 
 import { EssayComments } from '@/components/essay-comments'
+import { JsonLd } from '@/components/json-ld'
 import { getEssayBySlug } from '@/lib/essays'
+import { SITE_OG_IMAGE, articleJsonLd } from '@/lib/site'
 
 export async function generateMetadata({
   params,
@@ -15,38 +17,37 @@ export async function generateMetadata({
 
   if (!essay) {
     return {
-      title: 'Essay Not Found | Aden Tranter',
+      title: 'Essay Not Found',
       description: 'The requested essay could not be found.',
+      robots: { index: false, follow: false },
     }
   }
 
+  const description = essay.excerpt || 'Thoughts on software, startups, and figuring things out.'
+  const title = essay.title
+  const path = `/essays/${slug}`
+
   return {
-    title: `${essay.title} | Aden Tranter`,
-    description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
+    title,
+    description,
     alternates: {
-      canonical: `https://adentranter.com/essays/${slug}`,
+      canonical: path,
     },
+    robots: essay.listed ? undefined : { index: false, follow: false },
     openGraph: {
-      title: `${essay.title} | Aden Tranter`,
-      description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
+      title: `${title} | Aden Tranter`,
+      description,
       type: 'article',
-      url: `https://adentranter.com/essays/${slug}`,
+      url: path,
       publishedTime: new Date(essay.date).toISOString(),
       authors: ['Aden Tranter'],
-      images: [
-        {
-          url: '/adentranter.jpg',
-          width: 1200,
-          height: 630,
-          alt: 'Aden Tranter',
-        },
-      ],
+      images: [SITE_OG_IMAGE],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${essay.title} | Aden Tranter`,
-      description: essay.excerpt || 'Thoughts on software, startups, and figuring things out.',
-      images: ['/adentranter.jpg'],
+      title: `${title} | Aden Tranter`,
+      description,
+      images: [SITE_OG_IMAGE.url],
     },
   }
 }
@@ -63,8 +64,21 @@ export default async function Page({
     notFound()
   }
 
+  const description = essay.excerpt || 'Thoughts on software, startups, and figuring things out.'
+  const publishedTime = new Date(essay.date).toISOString()
+
   return (
     <div className="max-w-2xl mx-auto py-16 px-4">
+      {essay.listed && (
+        <JsonLd
+          data={articleJsonLd({
+            title: essay.title,
+            description,
+            path: `/essays/${essay.slug}`,
+            datePublished: publishedTime,
+          })}
+        />
+      )}
       <article className="prose dark:prose-invert max-w-none">
         <h1 className="text-3xl font-bold mb-4">{essay.title}</h1>
         <time className="text-sm text-gray-500 block mb-8 text-left">

@@ -6,15 +6,15 @@ export const revalidate = 3600
 import { getActiveCategories, getCoverImage } from '@/lib/distractions'
 
 export const metadata: Metadata = {
-  title: 'Distractions | Aden Tranter',
+  title: 'Distractions',
   description: 'Hobbies and side projects — photos, woodworking, and more.',
   alternates: {
-    canonical: 'https://adentranter.com/distractions',
+    canonical: '/distractions',
   },
   openGraph: {
     title: 'Distractions | Aden Tranter',
     description: 'Hobbies and side projects — photos, woodworking, and more.',
-    url: 'https://adentranter.com/distractions',
+    url: '/distractions',
     type: 'website',
     images: [
       {

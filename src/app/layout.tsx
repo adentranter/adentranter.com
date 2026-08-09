@@ -1,9 +1,19 @@
+import type { Metadata } from "next"
 import { Fraunces, Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import AppFrame from "@/components/layout/app-frame"
 import FireflyCursor from "@/components/layout/firefly-cursor"
+import { JsonLd } from "@/components/json-ld"
 import { Analytics } from "@vercel/analytics/react"
 import Script from "next/script"
+import {
+  SITE_DESCRIPTION,
+  SITE_OG_IMAGE,
+  SITE_TITLE,
+  SITE_URL,
+  personJsonLd,
+  websiteJsonLd,
+} from "@/lib/site"
 import "./globals.css"
 
 const inter = Inter({
@@ -17,9 +27,37 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
   display: "swap",
 })
-export const metadata = {
-  title: "Aden Tranter | Townsville, QLD | types characters",
-  description: "Critical Thinking | Essays on capitalism | Hypotheticals | incorrect placement of caplital letters.",
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Aden Tranter",
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "en_AU",
+    url: SITE_URL,
+    siteName: "Aden Tranter",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [SITE_OG_IMAGE.url],
+    creator: "@adentranter",
+  },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 }
 
 export default function RootLayout({
@@ -28,8 +66,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID
-  const enableGA = process.env.NODE_ENV === 'production' && !!GA_ID
-  const enableUmami = process.env.NODE_ENV === 'production'
+  const enableGA = process.env.NODE_ENV === "production" && !!GA_ID
+  const enableUmami = process.env.NODE_ENV === "production"
   return (
     <html lang="en" suppressHydrationWarning>
       {enableGA && (
@@ -61,6 +99,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans bg-background dark:bg-background-dark min-h-screen antialiased`}
       >
+        <JsonLd data={[personJsonLd(), websiteJsonLd()]} />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

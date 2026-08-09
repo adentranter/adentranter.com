@@ -13,15 +13,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const coverImage = (await getCoverImage('photos')) || '/adentranter.jpg'
 
   return {
-    title: 'My Photos | Distractions | Aden Tranter',
+    title: 'My Photos | Distracted',
     description: category.description,
     alternates: {
-      canonical: 'https://adentranter.com/distractions/photos',
+      canonical: '/distractions/photos',
     },
     openGraph: {
-      title: 'My Photos | Distractions | Aden Tranter',
+      title: 'My Photos | Distracted | Aden Tranter',
       description: category.description,
-      url: 'https://adentranter.com/distractions/photos',
+      url: '/distractions/photos',
       type: 'website',
       images: [
         {
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'My Photos | Distractions | Aden Tranter',
+      title: 'My Photos | Distracted | Aden Tranter',
       description: category.description,
       images: [coverImage],
     },

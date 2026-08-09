@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Disable Windows Defender (registry notes) | Aden Tranter",
+  title: "Disable Windows Defender (registry notes)",
   description: "Raw PowerShell reference for disabling Windows Defender via registry.",
   robots: { index: false, follow: false },
 }

@@ -1,10 +1,29 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
 import { MailingListSignup } from '@/components/mailing-list-signup'
+import { SITE_OG_IMAGE } from '@/lib/site'
+
+const aboutDescription = 'Trying to figure stuff out in Townsville, QLD.'
 
 export const metadata: Metadata = {
-  title: 'About | Aden Tranter',
-  description: 'Trying to figure stuff out in Townsville, QLD.',
+  title: 'About',
+  description: aboutDescription,
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About | Aden Tranter',
+    description: aboutDescription,
+    type: 'website',
+    url: '/about',
+    images: [SITE_OG_IMAGE],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About | Aden Tranter',
+    description: aboutDescription,
+    images: [SITE_OG_IMAGE.url],
+  },
 }
 
 export default function AboutPage() {

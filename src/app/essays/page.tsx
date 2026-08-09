@@ -4,15 +4,15 @@ import { Metadata } from 'next'
 import { getListedEssays } from '@/lib/essays'
 
 export const metadata: Metadata = {
-  title: 'Essays | Aden Tranter',
+  title: 'Essays',
   description: 'Thoughts on software, startups, and figuring things out.',
   alternates: {
-    canonical: 'https://adentranter.com/essays',
+    canonical: '/essays',
   },
   openGraph: {
     title: 'Essays | Aden Tranter',
     description: 'Thoughts on software, startups, and figuring things out.',
-    url: 'https://adentranter.com/essays',
+    url: '/essays',
     type: 'website',
     images: [
       {
