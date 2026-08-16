@@ -34,6 +34,7 @@ export async function generateMetadata({
     alternates: {
       canonical: path,
     },
+    ...(project.indexable === false ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${project.title} | Aden Tranter`,
       description: project.description || project.blurb,

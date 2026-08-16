@@ -15,6 +15,8 @@ export interface ProjectMeta {
   logoImagePath?: string
   projectType: 'Company' | 'Desk Job' | 'Open Source' | 'Experiment'
   status: 'POC - MVP' | 'Planning' | 'Dead in the water' | 'Production' | 'Open Source' | 'Experiment'
+  /** Whether this project's page should appear in the sitemap and be indexable. Defaults to true. */
+  indexable?: boolean
 }
 
 export type HomepageBrandKey =
@@ -23,6 +25,8 @@ export type HomepageBrandKey =
   | 'founder-agreements'
   | 'launchos'
   | 'mail-your-mp'
+  | 'twcg'
+  | 'twine-track'
 
 export type HomepageProject = {
   slug: HomepageBrandKey
@@ -62,6 +66,7 @@ export const projects: Record<string, ProjectMeta> = {
     logoComponent: 'twine',
     projectType: 'Company',
     status: 'Dead in the water',
+    indexable: false,
   },
   'founder-agreements': {
     slug: 'founder-agreements',
@@ -138,6 +143,37 @@ export const projects: Record<string, ProjectMeta> = {
     logoImagePath: '/logos/mission-control-logo.png',
     projectType: 'Desk Job',
     status: 'Production',
+    indexable: false,
+  },
+  twcg: {
+    slug: 'twcg',
+    title: 'TWCG',
+    description: 'A small browser game, currently in playtesting.',
+    blurb:
+      'A game prototype I\'m tinkering with in spare time — rules and mechanics are still moving around, so treat anything you see as a work in progress.',
+    url: 'https://twcg.adentranter.com',
+    techStack: 'Next.js, React',
+    featured: true,
+    tagline: 'Game prototype',
+    byline: 'A game I\'m tinkering with.',
+    audience: 'Anyone curious enough to poke at an unfinished game prototype.',
+    projectType: 'Experiment',
+    status: 'Planning',
+  },
+  'twine-track': {
+    slug: 'twine-track',
+    title: 'Twine Track',
+    description: 'Passive capture. Human-reviewed billable time.',
+    blurb:
+      'Time tracking that captures work in the background, then has a human review pass before it becomes an invoice line — so billable hours are accurate without you having to remember to start a timer.',
+    url: 'https://twinetrack.co',
+    techStack: 'Next.js, React',
+    featured: true,
+    tagline: 'Passive capture. Human-reviewed billable time.',
+    byline: 'Passive capture. Human-reviewed billable time.',
+    audience: 'Consultants and agencies who bill by the hour and want accurate time without manually running timers.',
+    projectType: 'Experiment',
+    status: 'Planning',
   },
   'base-crm': {
     slug: 'base-crm',
@@ -150,14 +186,16 @@ export const projects: Record<string, ProjectMeta> = {
     imagePath: '/screenshots/base-crm.png', // Placeholder - user will add image
     projectType: 'Company',
     status: 'Planning',
+    indexable: false,
   },
 }
 
-export const homepageProjects: HomepageProject[] = [
+/** Live in production — real users, real domains. */
+export const liveHomepageProjects: HomepageProject[] = [
   {
-    slug: 'voxit',
+    slug: 'mail-your-mp',
     cardClassName:
-      'border-[#8B1C2C]/35 bg-gradient-to-br from-[#2a1218] via-[#1a0f14] to-[#12161f]',
+      'border-[#F7AF02]/30 bg-gradient-to-br from-[#004A31]/90 via-[#0a2a20] to-[#121a16]',
   },
   {
     slug: 'legal-lookup',
@@ -169,14 +207,28 @@ export const homepageProjects: HomepageProject[] = [
     cardClassName:
       'border-[#2f6fe0]/30 bg-gradient-to-br from-[#15233a] via-[#121a2a] to-[#0f1f1c]',
   },
+]
+
+/** Prelaunch — currently tinkering, not ready for real users yet. */
+export const tinkeringHomepageProjects: HomepageProject[] = [
+  {
+    slug: 'voxit',
+    cardClassName:
+      'border-[#8B1C2C]/35 bg-gradient-to-br from-[#2a1218] via-[#1a0f14] to-[#12161f]',
+  },
   {
     slug: 'launchos',
     cardClassName:
       'border-[#0f9f6e]/35 bg-gradient-to-br from-[#0f1f28] via-[#12241f] to-[#132033]',
   },
   {
-    slug: 'mail-your-mp',
+    slug: 'twcg',
     cardClassName:
-      'border-[#F7AF02]/30 bg-gradient-to-br from-[#004A31]/90 via-[#0a2a20] to-[#121a16]',
+      'border-[#9d5cff]/30 bg-gradient-to-br from-[#1f1530] via-[#161222] to-[#0f1a24]',
+  },
+  {
+    slug: 'twine-track',
+    cardClassName:
+      'border-[#1f5c42]/35 bg-gradient-to-br from-[#12281c] via-[#0f1e17] to-[#0d1a1f]',
   },
 ]

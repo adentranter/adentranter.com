@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
-import { MailingListSignup } from '@/components/mailing-list-signup'
 import { SITE_OG_IMAGE } from '@/lib/site'
 
 const aboutDescription = 'Trying to figure stuff out in Townsville, QLD.'
@@ -110,18 +109,6 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
-
-      <hr className="my-12 border-t border-white/10" />
-
-      <section className="max-w-md space-y-3" aria-labelledby="mailing-list-heading">
-        <h2 id="mailing-list-heading" className="text-2xl font-semibold">
-          Occasional updates
-        </h2>
-        <p className="text-white/70 text-sm">
-          Product notes, essays, and the odd build log — no spam, unsubscribe whenever.
-        </p>
-        <MailingListSignup source="about-page" />
-      </section>
     </div>
   )
-} 
+}

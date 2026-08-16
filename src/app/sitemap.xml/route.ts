@@ -21,7 +21,9 @@ export async function GET(_req: NextRequest) {
   const essayRoutes = essaySlugs.map((slug) => `/essays/${slug}`)
 
   const { projects } = await import("../projects/data")
-  const projectRoutes = Object.values(projects).map((project) => `/projects/${project.slug}`)
+  const projectRoutes = Object.values(projects)
+    .filter((project) => project.indexable !== false)
+    .map((project) => `/projects/${project.slug}`)
 
   const routes = [...staticRoutes, ...essayRoutes, ...projectRoutes]
   const lastMod = new Date().toISOString()
