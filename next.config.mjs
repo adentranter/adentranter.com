@@ -6,7 +6,7 @@ const nextConfig = {
       bodySizeLimit: 5 * 1024 * 1024,
     },
   },
-  transpilePackages: ['@adentranter/music-api'],
+  transpilePackages: ['@adentranter/music-api', 'uploadthing', '@uploadthing/react'],
   outputFileTracingIncludes: {
     '/app/essays/[slug]': ['./src/app/essays/content/**/*'],
   },

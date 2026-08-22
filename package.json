@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "sync:essays": "node --env-file=.env --import tsx scripts/sync-essays.ts"
@@ -23,6 +23,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@shadcn/ui": "^0.0.4",
     "@types/canvas-confetti": "^1.9.0",
+    "@uploadthing/react": "^7.3.3",
     "@vercel/analytics": "^1.5.0",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
@@ -43,6 +44,7 @@
     "react-markdown": "^9.0.3",
     "sharp": "^0.35.0",
     "tailwind-merge": "^3.0.1",
+    "uploadthing": "^7.7.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
