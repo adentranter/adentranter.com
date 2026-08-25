@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import AppFrame from "@/components/layout/app-frame"
 import FireflyCursor from "@/components/layout/firefly-cursor"
 import { JsonLd } from "@/components/json-ld"
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
 import {
   SITE_DESCRIPTION,
