@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 
 import {
+  COUSIN_DUE_DATE_ISO,
+  COUSIN_DUE_DATE_LABEL,
   DUE_DATE_ISO,
   DUE_DATE_LABEL,
   PREGNANCY_LENGTH_DAYS,
@@ -53,6 +55,7 @@ export default function CloneCountdown({
   readonly initialNowMs: number
 }) {
   const dueMs = useMemo(() => new Date(DUE_DATE_ISO).getTime(), [])
+  const cousinDueMs = useMemo(() => new Date(COUSIN_DUE_DATE_ISO).getTime(), [])
   const startMs = useMemo(() => getPregnancyStartMs(dueMs), [dueMs])
   const [nowMs, setNowMs] = useState(initialNowMs)
 
@@ -71,7 +74,9 @@ export default function CloneCountdown({
   const daysIntoWeek = Math.floor(elapsedDays % 7)
   const trimester = currentTrimester(week)
   const timeLeft = getTimeLeft(nowMs, dueMs)
+  const cousinTimeLeft = getTimeLeft(nowMs, cousinDueMs)
   const arrived = timeLeft.totalMs <= 0
+  const cousinArrived = cousinTimeLeft.totalMs <= 0
   const remainingWeeks = Math.max(0, 40 - week)
   const progressPct = Math.round(progress * 1000) / 10
 
@@ -81,6 +86,7 @@ export default function CloneCountdown({
         <div className="absolute -left-24 top-[-8rem] h-80 w-80 rounded-full bg-rose-500/20 blur-3xl" />
         <div className="absolute -right-16 top-24 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
         <div className="absolute bottom-[-6rem] left-1/3 h-96 w-96 rounded-full bg-fuchsia-700/10 blur-3xl" />
+        <div className="absolute bottom-16 right-[-6rem] h-72 w-72 rounded-full bg-sky-400/12 blur-3xl" />
       </div>
 
       <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-10 px-5 py-16 sm:px-8">
@@ -101,26 +107,7 @@ export default function CloneCountdown({
             They&apos;re here.
           </p>
         ) : (
-          <section aria-label="Time remaining" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: "Days", value: timeLeft.days.toString() },
-              { label: "Hours", value: pad(timeLeft.hours) },
-              { label: "Minutes", value: pad(timeLeft.minutes) },
-              { label: "Seconds", value: pad(timeLeft.seconds) },
-            ].map((unit) => (
-              <div
-                key={unit.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-5 text-center backdrop-blur-sm"
-              >
-                <div className="font-[family-name:var(--font-fraunces)] text-4xl tabular-nums tracking-tight text-white sm:text-5xl">
-                  {unit.value}
-                </div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.22em] text-rose-200/55">
-                  {unit.label}
-                </div>
-              </div>
-            ))}
-          </section>
+          <CountdownGrid timeLeft={timeLeft} label="Time remaining" />
         )}
 
         <section className="space-y-6 rounded-3xl border border-white/10 bg-black/25 p-5 sm:p-7">
@@ -146,8 +133,79 @@ export default function CloneCountdown({
             <Stat label="Trimester" value={trimester.short} />
           </dl>
         </section>
+
+        <section
+          aria-label="Cousin inbound"
+          className="space-y-5 rounded-3xl border border-sky-300/20 bg-sky-950/35 p-5 sm:p-7"
+        >
+          <header className="space-y-2 text-center sm:text-left">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-sky-200/55">
+              cousin inbound
+            </p>
+            <h2 className="font-[family-name:var(--font-fraunces)] text-2xl font-light tracking-tight text-sky-50 sm:text-3xl">
+              {cousinArrived ? "The cousin has landed." : "A little boy is on the way."}
+            </h2>
+            <p className="text-sm text-sky-100/70">
+              {cousinArrived
+                ? `Due date was ${COUSIN_DUE_DATE_LABEL}. He made it first.`
+                : `Due ${COUSIN_DUE_DATE_LABEL}. Sister's boy — he'll arrive first.`}
+            </p>
+          </header>
+
+          {cousinArrived ? (
+            <p className="text-center font-[family-name:var(--font-fraunces)] text-2xl text-sky-200 sm:text-left">
+              He&apos;s here.
+            </p>
+          ) : (
+            <CountdownGrid
+              timeLeft={cousinTimeLeft}
+              label="Cousin time remaining"
+              accent="sky"
+              compact
+            />
+          )}
+        </section>
       </main>
     </div>
+  )
+}
+
+function CountdownGrid({
+  timeLeft,
+  label,
+  accent = "rose",
+  compact = false,
+}: {
+  readonly timeLeft: TimeLeft
+  readonly label: string
+  readonly accent?: "rose" | "sky"
+  readonly compact?: boolean
+}) {
+  const unitLabelClass =
+    accent === "sky"
+      ? "mt-2 text-[11px] uppercase tracking-[0.22em] text-sky-200/55"
+      : "mt-2 text-[11px] uppercase tracking-[0.22em] text-rose-200/55"
+  const valueClass = compact
+    ? "font-[family-name:var(--font-fraunces)] text-3xl tabular-nums tracking-tight text-white sm:text-4xl"
+    : "font-[family-name:var(--font-fraunces)] text-4xl tabular-nums tracking-tight text-white sm:text-5xl"
+  const cellClass = compact
+    ? "rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-4 text-center backdrop-blur-sm"
+    : "rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-5 text-center backdrop-blur-sm"
+
+  return (
+    <section aria-label={label} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {[
+        { unit: "Days", value: timeLeft.days.toString() },
+        { unit: "Hours", value: pad(timeLeft.hours) },
+        { unit: "Minutes", value: pad(timeLeft.minutes) },
+        { unit: "Seconds", value: pad(timeLeft.seconds) },
+      ].map((item) => (
+        <div key={item.unit} className={cellClass}>
+          <div className={valueClass}>{item.value}</div>
+          <div className={unitLabelClass}>{item.unit}</div>
+        </div>
+      ))}
+    </section>
   )
 }
 
