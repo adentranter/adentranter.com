@@ -207,7 +207,7 @@ export default async function ForTheLolsPage() {
 
       {data === null && !error ? (
         <p className="rounded-md border border-white/10 bg-black/30 p-4 text-sm text-white/65">
-          Database is not configured. Set <code>NEON_DATABASE_URL</code> and reload.
+          Database is not configured. Set <code>DATABASE_URL</code> and reload.
         </p>
       ) : null}
 

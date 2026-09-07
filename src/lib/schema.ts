@@ -1,8 +1,8 @@
-import type { NeonQueryFunction } from "@neondatabase/serverless"
+import type { Sql } from "@/lib/db"
 
 let schemaPromise: Promise<void> | null = null
 
-export function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
+export function ensureSchema(sql: Sql): Promise<void> {
   if (!schemaPromise) {
     schemaPromise = runMigrations(sql).catch((error) => {
       schemaPromise = null
@@ -12,7 +12,7 @@ export function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void
   return schemaPromise
 }
 
-async function runMigrations(sql: NeonQueryFunction<false, false>): Promise<void> {
+async function runMigrations(sql: Sql): Promise<void> {
   await sql`
     CREATE TABLE IF NOT EXISTS mailing_list_signups (
       id BIGSERIAL PRIMARY KEY,

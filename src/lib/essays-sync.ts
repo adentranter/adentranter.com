@@ -30,7 +30,7 @@ export function syncEssaysFromFiles(): Promise<SyncSummary> {
 async function runSync(): Promise<SyncSummary> {
   const sql = getSql()
   if (!sql) {
-    console.warn("[essays-sync] NEON_DATABASE_URL not set; skipping sync")
+    console.warn("[essays-sync] DATABASE_URL not set; skipping sync")
     return { updated: 0, unchanged: 0, failed: 0 }
   }
 

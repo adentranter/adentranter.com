@@ -1,16 +1,58 @@
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
+import { Pool, type PoolConfig, type QueryResultRow } from "pg"
 
-let cachedSql: NeonQueryFunction<false, false> | null = null
+export type Sql = <T extends QueryResultRow = QueryResultRow>(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+) => Promise<T[]>
 
-export function getSql(): NeonQueryFunction<false, false> | null {
-  const databaseUrl = process.env.NEON_DATABASE_URL
+const globalForDb = globalThis as unknown as {
+  pgPool: Pool | undefined
+  pgSql: Sql | undefined
+}
+
+function getDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL?.trim()
+  return url || undefined
+}
+
+function createPool(connectionString: string): Pool {
+  const config: PoolConfig = {
+    connectionString,
+    max: Number(process.env.PG_POOL_MAX ?? 5),
+  }
+  return new Pool(config)
+}
+
+function createSql(pool: Pool): Sql {
+  function sql<T extends QueryResultRow = QueryResultRow>(
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T[]> {
+    let text = ""
+    const params: unknown[] = []
+    for (let i = 0; i < strings.length; i += 1) {
+      text += strings[i]
+      if (i < values.length) {
+        params.push(values[i])
+        text += `$${params.length}`
+      }
+    }
+    return pool.query<T>(text, params).then((result) => result.rows)
+  }
+  return sql
+}
+
+export function getSql(): Sql | null {
+  const databaseUrl = getDatabaseUrl()
   if (!databaseUrl) {
     return null
   }
-  if (!cachedSql) {
-    cachedSql = neon(databaseUrl)
+  if (!globalForDb.pgSql) {
+    const pool = globalForDb.pgPool ?? createPool(databaseUrl)
+    globalForDb.pgPool = pool
+    globalForDb.pgSql = createSql(pool)
   }
-  return cachedSql
+  return globalForDb.pgSql
 }
 
 export class DatabaseUnavailableError extends Error {
@@ -20,7 +62,7 @@ export class DatabaseUnavailableError extends Error {
   }
 }
 
-export function requireSql(): NeonQueryFunction<false, false> {
+export function requireSql(): Sql {
   const sql = getSql()
   if (!sql) {
     throw new DatabaseUnavailableError()

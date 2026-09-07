@@ -51,10 +51,10 @@ PUSHER_SECRET=sk_xxxxx
 PUSHER_CLUSTER=ap1
 ```
 
-Mailing list signup (Neon):
+Mailing list signup (Postgres):
 
 ```
-NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database>
 ```
 
 Music / Navidrome (homepage now-playing + `/distractions/music`):
@@ -84,7 +84,7 @@ The small workspace package lives at [`packages/music-api`](packages/music-api).
 
 Essay metadata lives in [`src/app/essays/data.ts`](src/app/essays/data.ts) and the
 markdown bodies live in [`src/app/essays/content/`](src/app/essays/content/).
-They are the source of truth; the server syncs them into the Neon `essays`
+They are the source of truth; the server syncs them into the Postgres `essays`
 table at startup (see [`src/instrumentation.ts`](src/instrumentation.ts) and
 [`src/lib/essays-sync.ts`](src/lib/essays-sync.ts)).
 
@@ -111,7 +111,7 @@ plus a honeypot field and a per-IP-per-hour rate limit. Routes:
 Required env vars:
 
 ```
-NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database>
 COMMENT_CHALLENGE_SECRET=<random 32+ byte string>
 ```
 
@@ -148,7 +148,7 @@ The dashboard displays the latest IP and last-seen time.
 ### Environment variables
 
 ```
-NEON_DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database>
 HOME_IP_KEY=<random string for the home-server cron job>
 HOME_DASHBOARD_PASSWORD=<shared password for you and friends>
 HOME_DASHBOARD_SECRET=<random 32+ byte string for signing session cookies>
