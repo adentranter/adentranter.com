@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
           "/disableDefend",
           "/loves",
           "/toowicked",
+          "/clone",
+          "/clone/",
           "/upload",
           "/api/",
         ],

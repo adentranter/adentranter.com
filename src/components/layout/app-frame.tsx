@@ -6,11 +6,17 @@ import ThemedGradient from "@/components/layout/themed-gradient"
 
 export default function AppFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const isClone = pathname?.startsWith("/clone")
   const hideChrome =
+    isClone ||
     pathname?.startsWith("/fireworks") ||
     pathname?.startsWith("/toowicked") ||
     pathname?.startsWith("/home") ||
     (pathname?.startsWith("/snes/") && pathname?.includes("/player/"))
+
+  if (isClone) {
+    return <>{children}</>
+  }
 
   if (hideChrome) {
     return (
