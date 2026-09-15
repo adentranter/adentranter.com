@@ -2,6 +2,7 @@ import VoxLogo from "@/components/voxlogo"
 import { FounderConfigMark } from "@/components/project-brands/founder-config-mark"
 import { LegalLookupMark } from "@/components/project-brands/legal-lookup-mark"
 import { MailYourMpMark } from "@/components/project-brands/mail-your-mp-mark"
+import { VoicemailAgentMark } from "@/components/project-brands/voicemail-agent-mark"
 import { TwcgMark } from "@/components/project-brands/twcg-mark"
 import { TwineTrackMark } from "@/components/project-brands/twine-track-mark"
 import { LoopDeckMark } from "@/components/project-brands/loopdeck-mark"
@@ -20,6 +21,7 @@ const brandMarks: Record<HomepageBrandKey, ReactNode> = {
   "legal-lookup": <LegalLookupMark />,
   "founder-agreements": <FounderConfigMark />,
   "mail-your-mp": <MailYourMpMark />,
+  "voicemail-agent": <VoicemailAgentMark />,
   twcg: <TwcgMark />,
   "twine-track": <TwineTrackMark />,
   loopdeck: <LoopDeckMark />,

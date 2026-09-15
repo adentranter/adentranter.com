@@ -27,6 +27,7 @@ export type HomepageBrandKey =
   | 'twcg'
   | 'twine-track'
   | 'loopdeck'
+  | 'voicemail-agent'
 
 export type HomepageProject = {
   slug: HomepageBrandKey
@@ -113,6 +114,22 @@ export const projects: Record<string, ProjectMeta> = {
     byline: 'Sick of waiting? Mail your MP.',
     audience:
       "Australians who want a real letter on an issue to land on their MP's desk — without writing, printing, or posting it themselves.",
+    projectType: 'Experiment',
+    status: 'Production',
+  },
+  'voicemail-agent': {
+    slug: 'voicemail-agent',
+    title: 'Voicemail Agent',
+    description: 'Voicemail in. Drafted email out.',
+    blurb:
+      'For businesses that live on the message bank. You set up once — the site, the systems you already run, how you write. Then every inbound gets a reply held for a human check. No new phone system. No bot talking to your customers.',
+    url: 'https://sickofansweringthephone.com/',
+    techStack: 'Next.js, React',
+    featured: true,
+    tagline: 'Voicemail in. Drafted email out.',
+    byline: 'Voicemail in. Drafted email out.',
+    audience:
+      'Trades and small businesses that live on the message bank and want drafted email replies without a new phone system.',
     projectType: 'Experiment',
     status: 'Production',
   },
@@ -212,6 +229,11 @@ export const liveHomepageProjects: HomepageProject[] = [
     slug: 'mail-your-mp',
     cardClassName:
       'border-[#F7AF02]/30 bg-gradient-to-br from-[#004A31]/90 via-[#0a2a20] to-[#121a16]',
+  },
+  {
+    slug: 'voicemail-agent',
+    cardClassName:
+      'border-[#d4c4a0]/35 bg-gradient-to-br from-[#24382c] via-[#1a241c] to-[#1c1810]',
   },
   {
     slug: 'legal-lookup',
