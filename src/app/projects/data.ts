@@ -23,10 +23,10 @@ export type HomepageBrandKey =
   | 'voxit'
   | 'legal-lookup'
   | 'founder-agreements'
-  | 'launchos'
   | 'mail-your-mp'
   | 'twcg'
   | 'twine-track'
+  | 'loopdeck'
 
 export type HomepageProject = {
   slug: HomepageBrandKey
@@ -92,7 +92,7 @@ export const projects: Record<string, ProjectMeta> = {
       'One profile, one workflow, one dashboard — from idea through setup to first payment, without juggling half a dozen government and accounting tabs.',
     url: 'https://launchos.com.au',
     techStack: 'Next.js, React, Prisma',
-    featured: true,
+    featured: false,
     tagline: 'From idea to first payment.',
     byline: 'From idea to first payment.',
     audience: 'Australian founders launching a new business who want a guided path instead of a checklist scavenger hunt.',
@@ -160,6 +160,22 @@ export const projects: Record<string, ProjectMeta> = {
     projectType: 'Experiment',
     status: 'Planning',
   },
+  loopdeck: {
+    slug: 'loopdeck',
+    title: 'LoopDeck',
+    description: 'Browser looper — record a take, it loops instantly.',
+    blurb:
+      'Record a take, it loops instantly — then layer more takes on top to build the track. A browser looping station with tracks, overdubs, tap tempo, and export, no install required.',
+    url: 'https://vibetap.adentranter.com/',
+    techStack: 'Next.js, React, Web Audio',
+    featured: true,
+    tagline: 'Instant looping in the browser',
+    byline: 'Record a take, it loops instantly.',
+    audience:
+      'Musicians and bedroom producers who want a looper without installing anything.',
+    projectType: 'Experiment',
+    status: 'Production',
+  },
   'twine-track': {
     slug: 'twine-track',
     title: 'Twine Track',
@@ -217,11 +233,6 @@ export const tinkeringHomepageProjects: HomepageProject[] = [
       'border-[#8B1C2C]/35 bg-gradient-to-br from-[#2a1218] via-[#1a0f14] to-[#12161f]',
   },
   {
-    slug: 'launchos',
-    cardClassName:
-      'border-[#0f9f6e]/35 bg-gradient-to-br from-[#0f1f28] via-[#12241f] to-[#132033]',
-  },
-  {
     slug: 'twcg',
     cardClassName:
       'border-[#9d5cff]/30 bg-gradient-to-br from-[#1f1530] via-[#161222] to-[#0f1a24]',
@@ -230,5 +241,10 @@ export const tinkeringHomepageProjects: HomepageProject[] = [
     slug: 'twine-track',
     cardClassName:
       'border-[#1f5c42]/35 bg-gradient-to-br from-[#12281c] via-[#0f1e17] to-[#0d1a1f]',
+  },
+  {
+    slug: 'loopdeck',
+    cardClassName:
+      'border-[#4ade80]/35 bg-gradient-to-br from-[#0d1f14] via-[#0a1210] to-[#0a0a0a]',
   },
 ]

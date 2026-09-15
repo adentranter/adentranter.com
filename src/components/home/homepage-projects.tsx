@@ -1,10 +1,10 @@
 import VoxLogo from "@/components/voxlogo"
 import { FounderConfigMark } from "@/components/project-brands/founder-config-mark"
-import { LaunchOsMark } from "@/components/project-brands/launchos-mark"
 import { LegalLookupMark } from "@/components/project-brands/legal-lookup-mark"
 import { MailYourMpMark } from "@/components/project-brands/mail-your-mp-mark"
 import { TwcgMark } from "@/components/project-brands/twcg-mark"
 import { TwineTrackMark } from "@/components/project-brands/twine-track-mark"
+import { LoopDeckMark } from "@/components/project-brands/loopdeck-mark"
 import { ProjectBrandRow } from "@/components/home/project-brand-row"
 import {
   liveHomepageProjects,
@@ -19,10 +19,10 @@ const brandMarks: Record<HomepageBrandKey, ReactNode> = {
   voxit: <VoxLogo size="lg" asMark />,
   "legal-lookup": <LegalLookupMark />,
   "founder-agreements": <FounderConfigMark />,
-  launchos: <LaunchOsMark />,
   "mail-your-mp": <MailYourMpMark />,
   twcg: <TwcgMark />,
   "twine-track": <TwineTrackMark />,
+  loopdeck: <LoopDeckMark />,
 }
 
 function ProjectList({ items }: Readonly<{ items: HomepageProject[] }>) {
