@@ -28,6 +28,8 @@ export type HomepageBrandKey =
   | 'twine-track'
   | 'loopdeck'
   | 'voicemail-agent'
+  | 'launchos'
+  | 'startup-hubs'
 
 export type HomepageProject = {
   slug: HomepageBrandKey
@@ -93,11 +95,27 @@ export const projects: Record<string, ProjectMeta> = {
       'One profile, one workflow, one dashboard — from idea through setup to first payment, without juggling half a dozen government and accounting tabs.',
     url: 'https://launchos.com.au',
     techStack: 'Next.js, React, Prisma',
-    featured: false,
+    featured: true,
     tagline: 'From idea to first payment.',
     byline: 'From idea to first payment.',
     audience: 'Australian founders launching a new business who want a guided path instead of a checklist scavenger hunt.',
     projectType: 'Company',
+    status: 'POC - MVP',
+  },
+  'startup-hubs': {
+    slug: 'startup-hubs',
+    title: 'Startup Hubs',
+    description: 'A private network for founders doing startup school together.',
+    blurb:
+      'Share weekly updates, post asks, run events, and build community knowledge — without scattering everything across Slack, LinkedIn, and random docs.',
+    url: 'https://startuphubs.com.au',
+    techStack: 'Next.js, React, Prisma',
+    featured: true,
+    tagline: 'Private network for founder cohorts',
+    byline: 'A private network for founders doing startup school together.',
+    audience:
+      'Accelerator batches, local founder groups, and startup school cohorts who want a private hub instead of Slack sprawl.',
+    projectType: 'Experiment',
     status: 'POC - MVP',
   },
   'mail-your-mp': {
@@ -249,6 +267,16 @@ export const liveHomepageProjects: HomepageProject[] = [
 
 /** Prelaunch — currently tinkering, not ready for real users yet. */
 export const tinkeringHomepageProjects: HomepageProject[] = [
+  {
+    slug: 'launchos',
+    cardClassName:
+      'border-[#0f9f6e]/35 bg-gradient-to-br from-[#0d1f1a] via-[#0a1818] to-[#0a1218]',
+  },
+  {
+    slug: 'startup-hubs',
+    cardClassName:
+      'border-white/15 bg-gradient-to-br from-[#1a1a1a] via-[#141414] to-[#0f0f0f]',
+  },
   {
     slug: 'voxit',
     cardClassName:
