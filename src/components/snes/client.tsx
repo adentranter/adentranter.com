@@ -1,8 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Pusher from 'pusher-js'
 import { deleteRom, getRom, listRoms, putRom, type StoredRomMeta } from "@/lib/idb-roms"
+import {
+  downloadSave,
+  gameKeyFor,
+  generateSaveCode,
+  normalizeSaveCode,
+  saveFingerprint,
+  uploadSave,
+} from "@/lib/snes-saves"
 
 type RemoteRom = { name: string; url: string }
 
@@ -12,27 +20,13 @@ type GameEntry =
 
 type NavAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back'
 
-type EmulatorMethodCandidate = { name: string; args?: any[] }
-
 type GlobalAction = 'back' | 'save' | 'load'
 
 const EJS_DATA_PATH = 'https://cdn.emulatorjs.org/latest/data/'
 
-const SAVE_METHOD_CANDIDATES: EmulatorMethodCandidate[] = [
-  { name: 'saveState' },
-  { name: 'saveStateSlot', args: [0] },
-  { name: 'saveStateFile' },
-  { name: 'saveStateToLocalStorage' },
-  { name: 'quickSave' }
-]
+const SAVE_CODE_STORAGE_KEY = 'snes-save-code'
 
-const LOAD_METHOD_CANDIDATES: EmulatorMethodCandidate[] = [
-  { name: 'loadState' },
-  { name: 'loadStateSlot', args: [0] },
-  { name: 'loadStateFile' },
-  { name: 'loadStateFromLocalStorage' },
-  { name: 'quickLoad' }
-]
+const SRAM_SYNC_INTERVAL_MS = 20_000
 
 // Two-player key mapping used to replay phone controller input as keyboard events
 const KEYMAP: Record<string, string> = {
@@ -158,6 +152,30 @@ function stopEmulator() {
   w.EJS_emulator = undefined
 }
 
+function getGameManager(): any | null {
+  const emulator = (window as any).EJS_emulator
+  return emulator?.started && emulator.gameManager ? emulator.gameManager : null
+}
+
+// Mirrors EmulatorJS's own "Import Save File" button
+function writeSramToEmulator(gameManager: any, data: Uint8Array) {
+  const FS = gameManager.FS
+  const path: string = gameManager.getSaveFilePath()
+  let dir = ''
+  for (const part of path.split('/').slice(0, -1)) {
+    if (!part) continue
+    dir += `/${part}`
+    if (!FS.analyzePath(dir).exists) FS.mkdir(dir)
+  }
+  if (FS.analyzePath(path).exists) FS.unlink(path)
+  FS.writeFile(path, data)
+  gameManager.loadSaveFiles()
+}
+
+function timeLabel() {
+  return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
 // loader.js declares top-level consts, so it can only be re-run as a fresh module instance
 function runEmulatorLoader() {
   return new Promise<void>((resolve, reject) => {
@@ -208,6 +226,17 @@ export default function SnesClient(props: { sessionId?: string }) {
   const [globalMenuStatus, setGlobalMenuStatus] = useState<string | null>(null)
   const [globalActionBusy, setGlobalActionBusy] = useState(false)
 
+  // Cloud saves: a save code links browsers; without one, saves stay in this browser only
+  const [saveCode, setSaveCode] = useState<string | null>(null)
+  const [saveCodeInput, setSaveCodeInput] = useState('')
+  const [saveCodeError, setSaveCodeError] = useState<string | null>(null)
+  const [cloudStatus, setCloudStatus] = useState<string | null>(null)
+  const saveCodeRef = useRef<string | null>(null)
+  const currentGameKeyRef = useRef<string | null>(null)
+  const lastSramFingerprintRef = useRef<string | null>(null)
+  // Uploads wait until the cloud copy has been restored, so a stale local save can't overwrite it
+  const sramReadyRef = useRef(false)
+
   const globalMenuOptions = useMemo(
     () => [
       {
@@ -218,15 +247,19 @@ export default function SnesClient(props: { sessionId?: string }) {
       {
         id: 'save' as GlobalAction,
         label: 'Save game state',
-        description: 'Snapshot progress to this browser so you can continue later.'
+        description: saveCode
+          ? 'Snapshot progress to the cloud under your save code.'
+          : 'Snapshot progress to this browser. Set a save code to sync across browsers.'
       },
       {
         id: 'load' as GlobalAction,
         label: 'Load last save',
-        description: 'Restore the most recent save state captured on this device.'
+        description: saveCode
+          ? 'Restore the snapshot stored under your save code.'
+          : 'Restore the last snapshot saved in this browser.'
       }
     ],
-    []
+    [saveCode]
   )
 
   function emit(control: string, state: 'down' | 'up') {
@@ -325,7 +358,104 @@ export default function SnesClient(props: { sessionId?: string }) {
   const qr1 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '1')}` : '', [controllerBase])
   const qr2 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '2')}` : '', [controllerBase])
 
-  useEffect(() => { setMounted(true); (async () => setRoms(await listRoms()))() }, [])
+  useEffect(() => {
+    setMounted(true)
+    ;(async () => setRoms(await listRoms()))()
+    try {
+      const stored = normalizeSaveCode(localStorage.getItem(SAVE_CODE_STORAGE_KEY) ?? '')
+      if (stored) setSaveCode(stored)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    saveCodeRef.current = saveCode
+  }, [saveCode])
+
+  const applySaveCode = (input: string) => {
+    const code = normalizeSaveCode(input)
+    if (!code) {
+      setSaveCodeError('Use 4-64 letters, numbers, dashes or underscores.')
+      return
+    }
+    setSaveCodeError(null)
+    setSaveCode(code)
+    setSaveCodeInput('')
+    try { localStorage.setItem(SAVE_CODE_STORAGE_KEY, code) } catch {}
+  }
+
+  const clearSaveCode = () => {
+    setSaveCode(null)
+    setCloudStatus(null)
+    try { localStorage.removeItem(SAVE_CODE_STORAGE_KEY) } catch {}
+  }
+
+  // Reads the in-game save synchronously, so it is safe to call right before the emulator is stopped
+  const pushSram = async (keepalive = false) => {
+    const code = saveCodeRef.current
+    const game = currentGameKeyRef.current
+    if (!code || !game || !sramReadyRef.current) return
+    const gameManager = getGameManager()
+    if (!gameManager) return
+    let data: Uint8Array | null = null
+    try { data = gameManager.getSaveFile() } catch { return }
+    if (!data || data.length === 0) return
+    const fingerprint = saveFingerprint(data)
+    if (fingerprint === lastSramFingerprintRef.current) return
+    const ok = await uploadSave(code, game, 'sram', data, keepalive)
+    if (ok) {
+      lastSramFingerprintRef.current = fingerprint
+      setCloudStatus(`Cloud save synced ${timeLabel()}`)
+    } else {
+      setCloudStatus('Cloud sync failed; will retry')
+    }
+  }
+
+  const restoreCloudSram = async () => {
+    const code = saveCodeRef.current
+    const game = currentGameKeyRef.current
+    if (!code || !game) return
+    const gameManager = getGameManager()
+    if (!gameManager) return
+    try {
+      const cloud = await downloadSave(code, game, 'sram')
+      if (currentGameKeyRef.current !== game) return
+      if (cloud && cloud.length > 0) {
+        writeSramToEmulator(gameManager, cloud)
+        lastSramFingerprintRef.current = saveFingerprint(cloud)
+        setCloudStatus('Cloud save loaded')
+      } else {
+        setCloudStatus('No cloud save yet; progress will sync')
+      }
+      sramReadyRef.current = true
+      // Seeds the cloud with an existing in-browser save the first time a code is used
+      if (!cloud) await pushSram()
+    } catch (error) {
+      console.error('[Cloud saves] restore failed', error)
+      setCloudStatus('Could not reach cloud saves')
+    }
+  }
+
+  const restoreCloudSramRef = useRef(restoreCloudSram)
+  const pushSramRef = useRef(pushSram)
+  useEffect(() => {
+    restoreCloudSramRef.current = restoreCloudSram
+    pushSramRef.current = pushSram
+  })
+
+  // Periodically upload changed in-game saves, plus a final flush when the tab is hidden or closed
+  useEffect(() => {
+    if (interfaceStage !== 'emulator' || !saveCode) return
+    const id = window.setInterval(() => { void pushSramRef.current() }, SRAM_SYNC_INTERVAL_MS)
+    const flush = () => { void pushSramRef.current(true) }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flush)
+    }
+  }, [interfaceStage, saveCode])
 
   useEffect(() => {
     if (interfaceStage === 'landing') {
@@ -390,6 +520,12 @@ export default function SnesClient(props: { sessionId?: string }) {
       w.EJS_mobileDevices = true
       w.EJS_startOnLoaded = true
 
+      currentGameKeyRef.current = gameKeyFor(gameName)
+      lastSramFingerprintRef.current = null
+      sramReadyRef.current = false
+      setCloudStatus(null)
+      w.EJS_onGameStart = () => { void restoreCloudSramRef.current() }
+
       w.EJS_controls = {
         'p1_up': 'KeyW',
         'p1_down': 'KeyS',
@@ -446,37 +582,48 @@ export default function SnesClient(props: { sessionId?: string }) {
     return () => { cancelled = true }
   }, [activeRomLocal, activeRomRemote, mounted])
 
-  const callEmulatorMethod = useCallback(async (candidates: EmulatorMethodCandidate[]) => {
-    if (typeof window === 'undefined') {
-      return { ok: false as const, reason: 'no-window' as const }
+  const saveState = async (): Promise<string> => {
+    const gameManager = getGameManager()
+    if (!gameManager) return 'Emulator has not finished loading yet.'
+    const code = saveCodeRef.current
+    const game = currentGameKeyRef.current
+    try {
+      gameManager.quickSave(1)
+      if (!code || !game) return 'Game saved to this browser.'
+      const state: Uint8Array = gameManager.getState()
+      const ok = await uploadSave(code, game, 'state', state)
+      return ok ? 'Game saved to the cloud.' : 'Saved in this browser, but the cloud upload failed.'
+    } catch (error) {
+      console.error('[Emulator] save state failed', error)
+      return 'Unable to save game.'
     }
-    const emulator = (window as any).EJS_emulator
-    if (!emulator) {
-      return { ok: false as const, reason: 'not-ready' as const }
-    }
+  }
 
-    for (const candidate of candidates) {
-      const fn = emulator?.[candidate.name]
-      if (typeof fn === 'function') {
-        try {
-          const result = fn.apply(emulator, candidate.args ?? [])
-          if (result instanceof Promise) {
-            await result
-          }
-          return { ok: true as const, method: candidate.name }
-        } catch (error) {
-          console.error(`[Emulator] ${candidate.name} failed`, error)
-          return { ok: false as const, reason: 'error' as const, error }
-        }
+  const loadState = async (): Promise<string> => {
+    const gameManager = getGameManager()
+    if (!gameManager) return 'Emulator has not finished loading yet.'
+    const code = saveCodeRef.current
+    const game = currentGameKeyRef.current
+    try {
+      if (!code || !game) {
+        gameManager.quickLoad(1)
+        return 'Loaded the last save from this browser.'
       }
+      const state = await downloadSave(code, game, 'state')
+      if (!state) return 'No cloud save for this game yet.'
+      gameManager.loadState(state)
+      return 'Loaded your cloud save.'
+    } catch (error) {
+      console.error('[Emulator] load state failed', error)
+      return 'Unable to load game.'
     }
+  }
 
-    return { ok: false as const, reason: 'unavailable' as const }
-  }, [])
-
-  const handleGlobalAction = useCallback(async (action: GlobalAction) => {
+  const handleGlobalAction = async (action: GlobalAction) => {
     if (action === 'back') {
+      void pushSram()
       stopEmulator()
+      currentGameKeyRef.current = null
       exitFullscreen()
       setGlobalMenuOpen(false)
       setGlobalMenuStatus(null)
@@ -490,30 +637,14 @@ export default function SnesClient(props: { sessionId?: string }) {
     const isSave = action === 'save'
     setGlobalActionBusy(true)
     setGlobalMenuStatus(isSave ? 'Saving game…' : 'Loading game…')
-    const result = await callEmulatorMethod(isSave ? SAVE_METHOD_CANDIDATES : LOAD_METHOD_CANDIDATES)
+    const message = isSave ? await saveState() : await loadState()
     setGlobalActionBusy(false)
-
-    if (result.ok) {
-      const message = isSave ? 'Game saved to this browser.' : 'Loaded the most recent save.'
-      setStatus(message)
-      setGlobalMenuStatus(message)
+    setCloudStatus(message)
+    setGlobalMenuStatus(message)
+    if (message.startsWith('Game saved') || message.startsWith('Loaded')) {
       setGlobalMenuOpen(false)
-      return
     }
-
-    let errorMessage = isSave ? 'Unable to save game.' : 'Unable to load game.'
-    if (result.reason === 'no-window') {
-      errorMessage = 'Saves are only available in the browser.'
-    } else if (result.reason === 'not-ready') {
-      errorMessage = 'Emulator has not finished loading yet.'
-    } else if (result.reason === 'unavailable') {
-      errorMessage = 'This emulator build does not expose save/load controls.'
-    } else if (result.reason === 'error') {
-      errorMessage = 'Save system reported an internal error. Check console logs.'
-    }
-    setStatus(errorMessage)
-    setGlobalMenuStatus(errorMessage)
-  }, [callEmulatorMethod])
+  }
 
   useEffect(() => {
     if (!globalMenuOpen) return
@@ -683,7 +814,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       if (isEditableTarget(event.target)) {
-        if (event.code === 'Escape' || event.code === 'Enter' || event.code === 'ArrowDown') {
+        if (event.code === 'Escape') {
           event.preventDefault()
           event.target.blur()
         }
@@ -906,6 +1037,55 @@ export default function SnesClient(props: { sessionId?: string }) {
           </button>
         </div>
 
+        <div className="max-w-6xl mx-auto rounded-lg border border-white/10 bg-white/5 p-4 text-sm">
+          {saveCode ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="font-medium">Cloud saves on</div>
+                <div className="text-xs text-white/60">
+                  Save code <span className="font-mono text-white">{saveCode}</span>. Enter the same code in any browser to pick up where you left off.
+                </div>
+                {cloudStatus && <div className="mt-1 text-xs text-white/50">{cloudStatus}</div>}
+              </div>
+              <button onClick={clearSaveCode} className="text-xs text-white/60 hover:text-white">
+                Stop syncing on this browser
+              </button>
+            </div>
+          ) : (
+            <form
+              className="space-y-2"
+              onSubmit={(e) => { e.preventDefault(); applySaveCode(saveCodeInput) }}
+            >
+              <div>
+                <div className="font-medium">Cloud saves</div>
+                <div className="text-xs text-white/60">
+                  Saves stay in this browser until you choose a save code. Use the same code on another browser to load the same saves. Anyone with the code can load or overwrite them.
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="text"
+                  value={saveCodeInput}
+                  onChange={(e) => { setSaveCodeInput(e.target.value); setSaveCodeError(null) }}
+                  placeholder="Save code"
+                  className="min-w-0 flex-1 rounded-md bg-white/10 px-3 py-2 text-sm outline-none"
+                />
+                <button type="submit" className="rounded-md bg-primary/20 px-3 py-2 text-white hover:bg-primary">
+                  Use code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveCodeInput(generateSaveCode())}
+                  className="rounded-md bg-white/10 px-3 py-2 text-white/80 hover:bg-white/20"
+                >
+                  Generate
+                </button>
+              </div>
+              {saveCodeError && <div className="text-xs text-red-400">{saveCodeError}</div>}
+            </form>
+          )}
+        </div>
+
         <div className="max-w-6xl mx-auto">
           <input
             type="text"
@@ -991,7 +1171,7 @@ export default function SnesClient(props: { sessionId?: string }) {
             <p className="mb-2">Drag and drop ROMs here</p>
             <button className="px-3 py-1.5 rounded bg-primary/20 hover:bg-primary text-white" onClick={() => fileInputRef.current?.click()} disabled={loading}>{loading ? 'Adding…' : 'Add ROMs'}</button>
             <input ref={fileInputRef} type="file" accept=".smc,.sfc,.fig,.swc,.zip,.7z,application/zip,application/x-7z-compressed,application/octet-stream" multiple className="hidden" onChange={(e) => handleFiles(e.currentTarget.files)} />
-            <p className="mt-2 text-xs text-white/50">Stored locally via IndexedDB; progress stays in this browser. Only load ROMs you own rights to.</p>
+            <p className="mt-2 text-xs text-white/50">ROM files are stored only in this browser; on a new browser, add them again or use the shared library. Only load ROMs you own rights to.</p>
           </div>
           <div className="text-xs text-white/60 space-y-2">
             <div className="font-medium text-white/80">In-game keyboard controls</div>
@@ -1025,7 +1205,10 @@ export default function SnesClient(props: { sessionId?: string }) {
         >
           Menu
         </button>
-        {status && <div className="text-sm text-white/70">{status}</div>}
+        <div className="text-center text-xs text-white/60">
+          {status && <div className="text-sm text-white/70">{status}</div>}
+          {cloudStatus && <div>{cloudStatus}</div>}
+        </div>
         <button
           onClick={toggleFullscreen}
           className="pointer-events-auto px-2.5 py-1.5 text-xs rounded bg-white/10 hover:bg-white/20 text-white/80"

@@ -65,4 +65,16 @@ async function runMigrations(sql: Sql): Promise<void> {
       CONSTRAINT home_ip_singleton CHECK (id = 1)
     )
   `
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS snes_saves (
+      save_code TEXT NOT NULL,
+      game TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK (kind IN ('sram', 'state')),
+      data BYTEA NOT NULL,
+      size INT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (save_code, game, kind)
+    )
+  `
 }
