@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { haptic } from '@/lib/haptics'
 
 type Props = { sessionId: string; playerId: string }
 
@@ -91,12 +92,7 @@ export default function SnesController({ sessionId, playerId }: Props) {
   }
 
   async function handleStart() {
-    // Test vibration on start
-    if ('vibrate' in navigator) {
-      try {
-        navigator.vibrate([100, 50, 100]) // Test pattern
-      } catch {}
-    }
+    haptic(40)
     await enableFullscreenAndLock()
     setStarted(true)
   }
@@ -126,23 +122,21 @@ export default function SnesController({ sessionId, playerId }: Props) {
           console.error('[Controller] Network error:', err)
         })
     }
-    
-    // Haptic feedback on button press
-    if (state === 'down' && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate(50) // Short vibration
-      } catch {}
-    }
   }
 
   const bind = (control: string) => ({
-    onPointerDown: (e: React.PointerEvent) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); send(control, 'down') },
+    onPointerDown: (e: React.PointerEvent) => {
+      haptic()
+      ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+      send(control, 'down')
+    },
     onPointerUp: () => send(control, 'up'),
     onPointerCancel: () => send(control, 'up'),
     onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
   })
 
   const triggerMenuToggle = () => {
+    haptic(30)
     send('__menu', 'down')
     window.setTimeout(() => send('__menu', 'up'), 120)
   }
