@@ -5,6 +5,11 @@ const nextConfig = {
       // Increase the body size limit to 5MB (value in bytes)
       bodySizeLimit: 5 * 1024 * 1024,
     },
+    // One worker, and Webpack's lower-memory mode, so the Coolify build
+    // is not SIGKILLed (exit 137) when the host is short on RAM.
+    cpus: 1,
+    staticGenerationMaxConcurrency: 2,
+    webpackMemoryOptimizations: true,
   },
   transpilePackages: ['@adentranter/music-api', 'uploadthing', '@uploadthing/react'],
   outputFileTracingIncludes: {

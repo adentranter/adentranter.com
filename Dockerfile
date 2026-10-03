@@ -7,6 +7,9 @@ RUN npm ci
 
 FROM base AS builder
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+# Cap the heap so V8 collects before the kernel OOM-kills the build (exit 137).
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
