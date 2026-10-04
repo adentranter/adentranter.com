@@ -74,6 +74,9 @@ const KEYMAP: Record<string, string> = {
 
 const GAME_KEYS = new Set(Object.values(KEYMAP))
 
+const MIN_PRESS_MS = 70
+const MIN_RELEASE_GAP_MS = 34
+
 // RetroArch joypad button ids used by EmulatorJS's simulateInput
 const SNES_BUTTON_INDEX: Record<string, number> = {
   b: 0,
@@ -279,6 +282,9 @@ export default function SnesClient(props: { sessionId?: string }) {
     [saveCode]
   )
 
+  const pressStartedAtRef = useRef(new Map<string, number>())
+  const pendingReleaseRef = useRef(new Map<string, number>())
+
   // EmulatorJS matches keyboard input on keyCode, which synthetic KeyboardEvents can't set,
   // so phone presses go straight to the emulator's input API instead
   function emit(control: string, state: 'down' | 'up') {
@@ -291,7 +297,39 @@ export default function SnesClient(props: { sessionId?: string }) {
     const gameManager = getGameManager()
     if (!gameManager) return
     const player = match[1] === '2' ? 1 : 0
-    gameManager.simulateInput(player, button, state === 'down' ? 1 : 0)
+    const key = `${player}:${button}`
+
+    // A tap's press and release can arrive within one frame over the network; the game only
+    // samples input once per frame, so every press is held for a few frames before releasing
+    const pending = pendingReleaseRef.current.get(key)
+    if (pending !== undefined) {
+      window.clearTimeout(pending)
+      pendingReleaseRef.current.delete(key)
+      if (state === 'down') {
+        gameManager.simulateInput(player, button, 0)
+        window.setTimeout(() => {
+          pressStartedAtRef.current.set(key, performance.now())
+          getGameManager()?.simulateInput(player, button, 1)
+        }, MIN_RELEASE_GAP_MS)
+        return
+      }
+    }
+
+    if (state === 'down') {
+      pressStartedAtRef.current.set(key, performance.now())
+      gameManager.simulateInput(player, button, 1)
+      return
+    }
+
+    const wait = MIN_PRESS_MS - (performance.now() - (pressStartedAtRef.current.get(key) ?? 0))
+    if (wait <= 0) {
+      gameManager.simulateInput(player, button, 0)
+      return
+    }
+    pendingReleaseRef.current.set(key, window.setTimeout(() => {
+      pendingReleaseRef.current.delete(key)
+      getGameManager()?.simulateInput(player, button, 0)
+    }, wait))
   }
 
   const captureGameScreenshot = async (gameName: string) => {
