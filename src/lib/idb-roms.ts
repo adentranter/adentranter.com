@@ -5,12 +5,11 @@ export type StoredRomMeta = {
   addedAt: number
 }
 
-const DB_NAME = 'snes-roms'
 const STORE = 'files'
 
-function openDB(): Promise<IDBDatabase> {
+function openDB(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
+    const req = indexedDB.open(dbName, 1)
     req.onerror = () => reject(req.error)
     req.onupgradeneeded = () => {
       const db = req.result
@@ -23,8 +22,8 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
-export async function putRom(file: File): Promise<StoredRomMeta> {
-  const db = await openDB()
+export async function putRom(dbName: string, file: File): Promise<StoredRomMeta> {
+  const db = await openDB(dbName)
   const data = await file.arrayBuffer()
   const meta: StoredRomMeta = {
     name: file.name,
@@ -44,8 +43,8 @@ export async function putRom(file: File): Promise<StoredRomMeta> {
   return meta
 }
 
-export async function getRom(name: string): Promise<{ meta: StoredRomMeta; blob: Blob } | null> {
-  const db = await openDB()
+export async function getRom(dbName: string, name: string): Promise<{ meta: StoredRomMeta; blob: Blob } | null> {
+  const db = await openDB(dbName)
   const record = await new Promise<any>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readonly')
     const store = tx.objectStore(STORE)
@@ -59,8 +58,8 @@ export async function getRom(name: string): Promise<{ meta: StoredRomMeta; blob:
   return { meta, blob: new Blob([data], { type: record.type || 'application/octet-stream' }) }
 }
 
-export async function listRoms(): Promise<StoredRomMeta[]> {
-  const db = await openDB()
+export async function listRoms(dbName: string): Promise<StoredRomMeta[]> {
+  const db = await openDB(dbName)
   const items = await new Promise<StoredRomMeta[]>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readonly')
     const store = tx.objectStore(STORE)
@@ -81,8 +80,8 @@ export async function listRoms(): Promise<StoredRomMeta[]> {
   return items.sort((a, b) => b.addedAt - a.addedAt)
 }
 
-export async function deleteRom(name: string): Promise<void> {
-  const db = await openDB()
+export async function deleteRom(dbName: string, name: string): Promise<void> {
+  const db = await openDB(dbName)
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     const store = tx.objectStore(STORE)
@@ -93,4 +92,3 @@ export async function deleteRom(name: string): Promise<void> {
   })
   db.close()
 }
-

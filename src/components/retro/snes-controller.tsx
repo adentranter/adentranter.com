@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { canHapticNow, haptic } from '@/lib/haptics'
+import { ControllerGates, ControllerStatus, useControllerLink } from '@/components/retro/use-controller-link'
 
 type Props = { sessionId: string; playerId: string }
 
@@ -86,153 +87,9 @@ function controlsFor(zone: Zone, p: Point, g: Layout, fixed?: string): string[] 
 }
 
 export default function SnesController({ sessionId, playerId }: Props) {
-  const [connected, setConnected] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isPortrait, setIsPortrait] = useState(false)
-  const [fsSupported, setFsSupported] = useState(false)
-  const [started, setStarted] = useState(false)
-  const [size, setSize] = useState({ w: 0, h: 0 })
-  const [pressed, setPressed] = useState<Set<string>>(() => new Set())
-
-  const surfaceRef = useRef<HTMLDivElement | null>(null)
   const pointersRef = useRef(new Map<number, { zone: Zone; fixed?: string; controls: string[]; buzzOnRelease: boolean }>())
-  const holdCountsRef = useRef(new Map<string, number>())
-  const sendChainsRef = useRef(new Map<string, Promise<unknown>>())
-
-  const pushUrl = useMemo(() => {
-    if (typeof window === 'undefined') return ''
-    return `/api/snes/${encodeURIComponent(sessionId)}/push?playerId=${encodeURIComponent(playerId)}`
-  }, [sessionId, playerId])
-
-  // Register this controller session with the host via a lightweight hello
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!pushUrl) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch(pushUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ type: 'hello', ts: Date.now() }),
-        })
-        if (!cancelled) {
-          if (res.ok) { setConnected(true) }
-          else {
-            // Fallback: send a no-op button event to ensure session creation
-            const res2 = await fetch(pushUrl, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ type: 'button', control: '__hello', state: 'down' }),
-            })
-            if (res2.ok) setConnected(true)
-            else setError('Failed to register with host')
-          }
-        }
-      } catch {
-        if (!cancelled) setError('Failed to reach host')
-      }
-    })()
-    return () => { cancelled = true }
-  }, [pushUrl])
-
-  // Lock page scrolling while controller is open
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const prevHtml = document.documentElement.style.overflow
-    const prevBody = document.body.style.overflow
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.documentElement.style.overflow = prevHtml
-      document.body.style.overflow = prevBody
-    }
-  }, [])
-
-  // Track orientation and fullscreen capability
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(orientation: portrait)')
-    const update = () => setIsPortrait(mq.matches)
-    update()
-    mq.addEventListener?.('change', update)
-    setFsSupported(!!document.documentElement.requestFullscreen)
-    return () => { mq.removeEventListener?.('change', update) }
-  }, [])
-
-  useEffect(() => {
-    const el = surfaceRef.current
-    if (!el) return
-    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight })
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const playerPrefix = useMemo(() => {
-    if (playerId === '1') return 'p1'
-    if (playerId === '2') return 'p2'
-    return null
-  }, [playerId])
-
-  const mapControl = (control: string) => {
-    if (control.startsWith('__')) return control
-    return playerPrefix ? `${playerPrefix}_${control}` : control
-  }
-
-  // Requests for the same button are chained so a quick tap's release can never overtake its press
-  function send(control: string, state: 'down' | 'up') {
-    if (!pushUrl) return
-    const body = JSON.stringify({ type: 'button', control: mapControl(control), state })
-    const prev = sendChainsRef.current.get(control) ?? Promise.resolve()
-    const next = prev
-      .catch(() => {})
-      .then(() => fetch(pushUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }))
-      .catch((err) => console.error('[Controller] Network error:', err))
-    sendChainsRef.current.set(control, next)
-  }
-
-  // Two thumbs can hold the same button, so only the first press and last release are sent
-  function hold(control: string): boolean {
-    const counts = holdCountsRef.current
-    const n = (counts.get(control) ?? 0) + 1
-    counts.set(control, n)
-    if (n === 1) send(control, 'down')
-    return n === 1
-  }
-
-  function release(control: string) {
-    const counts = holdCountsRef.current
-    const n = (counts.get(control) ?? 0) - 1
-    if (n > 0) { counts.set(control, n); return }
-    counts.delete(control)
-    send(control, 'up')
-  }
-
-  function syncPressed() {
-    setPressed(new Set(holdCountsRef.current.keys()))
-  }
-
-  function releaseAll() {
-    for (const control of Array.from(holdCountsRef.current.keys())) {
-      holdCountsRef.current.set(control, 1)
-      release(control)
-    }
-    pointersRef.current.clear()
-    syncPressed()
-  }
-
-  useEffect(() => {
-    const onHide = () => { if (document.hidden) releaseAll() }
-    document.addEventListener('visibilitychange', onHide)
-    window.addEventListener('blur', releaseAll)
-    return () => {
-      document.removeEventListener('visibilitychange', onHide)
-      window.removeEventListener('blur', releaseAll)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pushUrl])
+  const link = useControllerLink('snes', sessionId, playerId, { onReleaseAll: () => pointersRef.current.clear() })
+  const { surfaceRef, size, pressed, hold, release, syncPressed } = link
 
   const layout = size.w > 0 ? layoutFor(size.w, size.h) : null
 
@@ -279,34 +136,6 @@ export default function SnesController({ sessionId, playerId }: Props) {
     for (const c of tracked.controls) release(c)
     if (tracked.buzzOnRelease && e.type === 'pointerup') haptic()
     syncPressed()
-  }
-
-  async function enableFullscreenAndLock() {
-    try {
-      if (document.fullscreenElement == null) {
-        await document.documentElement.requestFullscreen()
-      }
-    } catch {}
-    try {
-      const anyScreen = (screen as any)
-      if (anyScreen?.orientation?.lock) {
-        await anyScreen.orientation.lock('landscape')
-      }
-    } catch {
-      // orientation lock might be disallowed until PWA install; ignore
-    }
-  }
-
-  async function handleStart() {
-    haptic(40)
-    await enableFullscreenAndLock()
-    setStarted(true)
-  }
-
-  const triggerMenuToggle = () => {
-    haptic(30)
-    send('__menu', 'down')
-    window.setTimeout(() => send('__menu', 'up'), 120)
   }
 
   const isDown = (control: string) => pressed.has(control)
@@ -416,47 +245,10 @@ export default function SnesController({ sessionId, playerId }: Props) {
           </div>
         )}
 
-        {/* Status + host menu */}
-        <div className="absolute left-1/2 top-2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 text-xs">
-          <div className="font-semibold">
-            P{playerId} · {connected ? <span className="text-emerald-700">ready</span> : <span className="opacity-60">connecting…</span>}
-          </div>
-          {error && <div className="text-red-700">{error}</div>}
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={triggerMenuToggle}
-            className="rounded-full border border-[#8f8da6] bg-[#e4e4ea] px-3 py-1 font-semibold text-[#3d3a5c]"
-            title="Toggle the host menu for saves and library"
-          >
-            Menu
-          </button>
-        </div>
+        <ControllerStatus link={link} playerId={playerId} />
       </div>
 
-      {/* Tap-to-start gate (requests fullscreen + lock) */}
-      {!started && (
-        <button onClick={handleStart} className="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-6 text-center text-white">
-          <div className="space-y-3">
-            <div className="text-lg font-medium">Tap to start</div>
-            <div className="text-sm text-white/70">Enables fullscreen and tries to lock landscape.</div>
-          </div>
-        </button>
-      )}
-
-      {/* Portrait overlay asking to rotate / enable fullscreen (shown after start) */}
-      {started && isPortrait && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur flex items-center justify-center p-6 text-center text-white">
-          <div className="space-y-3">
-            <div className="text-lg font-medium">Rotate your phone</div>
-            <div className="text-sm text-white/70">This controller is best in landscape.</div>
-            {fsSupported && (
-              <button onClick={enableFullscreenAndLock} className="mt-1 px-3 py-1.5 rounded bg-white/10 hover:bg-white/20">
-                Enable fullscreen & try lock
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      <ControllerGates link={link} />
     </div>
   )
 }

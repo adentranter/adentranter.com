@@ -12,7 +12,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     pathname?.startsWith("/fireworks") ||
     pathname?.startsWith("/toowicked") ||
     pathname?.startsWith("/home") ||
-    (pathname?.startsWith("/snes/") && pathname?.includes("/player/"))
+    ((pathname?.startsWith("/snes/") || pathname?.startsWith("/n64/")) && pathname?.includes("/player/"))
 
   if (isClone) {
     return <>{children}</>

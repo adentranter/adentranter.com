@@ -1,3 +1,5 @@
+import { stripRomExtension, type RetroSystem } from '@/lib/retro/systems'
+
 export type SaveKind = 'sram' | 'state'
 
 export const MAX_SAVE_BYTES = 2 * 1024 * 1024
@@ -12,8 +14,8 @@ export function normalizeSaveCode(input: string): string | null {
 }
 
 // Uploaded and remote copies of the same ROM file share saves
-export function gameKeyFor(name: string): string {
-  return name.replace(/\.(smc|sfc|zip|7z|fig|swc)$/i, '').trim().toLowerCase().slice(0, 200)
+export function gameKeyFor(system: RetroSystem, name: string): string {
+  return (system.saveKeyPrefix + stripRomExtension(system, name).trim().toLowerCase()).slice(0, 200)
 }
 
 export function generateSaveCode(): string {
@@ -23,7 +25,7 @@ export function generateSaveCode(): string {
 
 function saveUrl(code: string, game: string, kind: SaveKind) {
   const params = new URLSearchParams({ code, game, kind })
-  return `/api/snes/saves?${params.toString()}`
+  return `/api/retro/saves?${params.toString()}`
 }
 
 export async function downloadSave(code: string, game: string, kind: SaveKind): Promise<Uint8Array | null> {

@@ -1,8 +1,8 @@
-import SnesController from '@/components/retro/snes-controller'
+import N64Controller from '@/components/retro/n64-controller'
 import type { Metadata, Viewport } from 'next'
 
 export const metadata: Metadata = {
-  title: 'SNES Controller',
+  title: 'N64 Controller',
   robots: { index: false, follow: false },
 }
 
@@ -16,5 +16,5 @@ export const viewport: Viewport = {
 
 export default async function Page({ params }: any) {
   const { sessionid, playerid } = await params
-  return <SnesController sessionId={sessionid} playerId={playerid} />
+  return <N64Controller sessionId={sessionid} playerId={playerid} />
 }

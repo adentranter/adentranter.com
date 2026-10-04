@@ -29,9 +29,21 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## SNES
+## SNES and N64
 
-This project includes a SNES emulator and mobile controller via Pusher.
+This project includes SNES (`/snes`) and N64 (`/n64`) emulators with mobile controllers via Pusher. Both run
+[EmulatorJS](https://emulatorjs.org) from its CDN and share one session/controller flow, configured per console in
+`src/lib/retro/systems.ts`.
+
+ROMs:
+- Players add ROMs they own from the game picker; they are stored only in that browser's IndexedDB (separate libraries per console).
+- SNES accepts `.smc`, `.sfc`, `.fig`, `.swc`, `.zip`, `.7z`; N64 accepts `.z64`, `.n64`, `.v64`, `.zip`, `.7z`. No BIOS is needed for either.
+- An optional shared library is listed from `public/roms`, `public/snes`, `public/@roms` (SNES) and `public/n64` (N64) via `GET /api/roms?system=snes|n64`.
+
+N64 notes:
+- The phone controller has a floating analog stick, A/B, C buttons, L/Z/R, Start and a compact D-pad. Stick movement is sent as coalesced analog updates (at most ~20/s, only when the value changes), which count toward Pusher message usage.
+- N64 emulation is far heavier than SNES; a laptop/desktop host is recommended. On iOS, EmulatorJS uses the `parallel_n64` core and performance depends on the game and device.
+- Cloud saves share the SNES save code and 2 MB per-save limit; N64 save states larger than that stay in the browser only.
 
 Environment variables required for controller connectivity:
 
@@ -175,6 +187,7 @@ The route derives the caller IP from `x-forwarded-for` (or accepts an optional
 Flow:
 - Visiting `/snes` redirects to a new session at `/snes/[session]`.
 - That page shows the game area, local/remote ROMs, and QR codes for controllers at `/snes/[session]/player/1` and `/snes/[session]/player/2`.
+- `/n64` works the same way, with controllers at `/n64/[session]/player/1|2`.
 - The controller page has no navbar and registers with the host so you should see Pusher status and a controller count.
 
 ## Deploy on Vercel

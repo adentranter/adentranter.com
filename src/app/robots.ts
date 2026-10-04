@@ -13,6 +13,8 @@ export default function robots(): MetadataRoute.Robots {
           "/home/",
           "/snes",
           "/snes/",
+          "/n64",
+          "/n64/",
           "/forthelols",
           "/forthelols/",
           "/disableDefend",

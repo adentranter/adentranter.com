@@ -2,16 +2,31 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import Link from "next/link"
 import Pusher from 'pusher-js'
 import { deleteRom, getRom, listRoms, putRom, type StoredRomMeta } from "@/lib/idb-roms"
 import {
   downloadSave,
   gameKeyFor,
   generateSaveCode,
+  MAX_SAVE_BYTES,
   normalizeSaveCode,
   saveFingerprint,
   uploadSave,
-} from "@/lib/snes-saves"
+} from "@/lib/retro/saves"
+import {
+  ANALOG_MAX,
+  getRetroSystem,
+  isAnalogAxis,
+  isRomFileName,
+  pusherChannelFor,
+  RETRO_SYSTEMS,
+  romAcceptAttribute,
+  STICK_INDEX,
+  stripRomExtension,
+  type RetroSystem,
+  type RetroSystemId,
+} from "@/lib/retro/systems"
 
 type RemoteRom = { name: string; url: string }
 
@@ -23,77 +38,21 @@ type NavAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back'
 
 type GlobalAction = 'back' | 'save' | 'load'
 
-const EJS_DATA_PATH = 'https://cdn.emulatorjs.org/latest/data/'
+// Pinned: the "latest" channel's 4.3 pre-release frontend calls a save-state export the published cores lack
+const EJS_DATA_PATH = 'https://cdn.emulatorjs.org/4.2.3/data/'
 
+// Shared by every console so one save code syncs all of them
 const SAVE_CODE_STORAGE_KEY = 'snes-save-code'
 
 const SRAM_SYNC_INTERVAL_MS = 20_000
 
-// Two-player key mapping used to replay phone controller input as keyboard events
-const KEYMAP: Record<string, string> = {
-  'p1_up': 'KeyW',
-  'p1_down': 'KeyS',
-  'p1_left': 'KeyA',
-  'p1_right': 'KeyD',
-  'p1_a': 'KeyX',
-  'p1_b': 'KeyZ',
-  'p1_x': 'KeyC',
-  'p1_y': 'KeyV',
-  'p1_l': 'KeyQ',
-  'p1_r': 'KeyE',
-  'p1_start': 'Enter',
-  'p1_select': 'ShiftLeft',
-
-  'p2_up': 'ArrowUp',
-  'p2_down': 'ArrowDown',
-  'p2_left': 'ArrowLeft',
-  'p2_right': 'ArrowRight',
-  'p2_a': 'KeyI',
-  'p2_b': 'KeyO',
-  'p2_x': 'KeyK',
-  'p2_y': 'KeyL',
-  'p2_l': 'KeyU',
-  'p2_r': 'KeyP',
-  'p2_start': 'Space',
-  'p2_select': 'ShiftRight',
-
-  // Legacy single-player mapping (for backward compatibility)
-  up: 'ArrowUp',
-  down: 'ArrowDown',
-  left: 'ArrowLeft',
-  right: 'ArrowRight',
-  a: 'KeyX',
-  b: 'KeyZ',
-  x: 'KeyS',
-  y: 'KeyA',
-  l: 'KeyQ',
-  r: 'KeyW',
-  start: 'Enter',
-  select: 'ShiftRight',
-}
-
-const GAME_KEYS = new Set(Object.values(KEYMAP))
-
 const MIN_PRESS_MS = 70
 const MIN_RELEASE_GAP_MS = 34
 
-// RetroArch joypad button ids used by EmulatorJS's simulateInput
-const SNES_BUTTON_INDEX: Record<string, number> = {
-  b: 0,
-  y: 1,
-  select: 2,
-  start: 3,
-  up: 4,
-  down: 5,
-  left: 6,
-  right: 7,
-  a: 8,
-  x: 9,
-  l: 10,
-  r: 11,
-}
+// How far the phone's analog stick must lean before it moves a menu selection
+const STICK_NAV_THRESHOLD = 0.6
 
-// Menu navigation: d-pad/arrows/WASD move, SNES A (X / I) confirms, SNES B (Z / O) goes back
+// Menu navigation: d-pad/arrows/WASD move, A (X / I) confirms, B (Z / O) goes back
 const NAV_KEYS: Record<string, NavAction> = {
   ArrowUp: 'up',
   KeyW: 'up',
@@ -131,9 +90,8 @@ function formatSize(bytes: number) {
   return `${bytes.toFixed(1)} ${units[i]}`
 }
 
-const stripExt = (name: string) => name.replace(/\.(smc|sfc|zip|7z|fig|swc)$/i, '')
-const prettifyName = (name: string) =>
-  stripExt(name)
+const prettifyName = (system: RetroSystem, name: string) =>
+  stripRomExtension(system, name)
     // remove trailing (1), (2) etc
     .replace(/\s*\((\d+)\)\s*$/i, '')
     // remove region/extra tags like (USA), [!], [v1.0], etc
@@ -142,8 +100,8 @@ const prettifyName = (name: string) =>
     .replace(/\s{2,}/g, ' ')
     .trim()
 
-const searchKey = (name: string) =>
-  prettifyName(name)
+const searchKey = (system: RetroSystem, name: string) =>
+  prettifyName(system, name)
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
 
@@ -210,7 +168,8 @@ function runEmulatorLoader() {
   })
 }
 
-export default function SnesClient(props: { sessionId?: string }) {
+export default function RetroClient(props: { system: RetroSystemId; sessionId?: string }) {
+  const system = getRetroSystem(props.system)
   const [roms, setRoms] = useState<StoredRomMeta[]>([])
   const [loading, setLoading] = useState(false)
   const [activeRomLocal, setActiveRomLocal] = useState<string | null>(null)
@@ -219,6 +178,7 @@ export default function SnesClient(props: { sessionId?: string }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [mounted, setMounted] = useState(false)
   const [search, setSearch] = useState("")
+  const [romUploadError, setRomUploadError] = useState<string | null>(null)
   const [remoteRoms, setRemoteRoms] = useState<RemoteRom[] | null>(null)
   const [remoteError, setRemoteError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -289,7 +249,7 @@ export default function SnesClient(props: { sessionId?: string }) {
   // so phone presses go straight to the emulator's input API instead
   function emit(control: string, state: 'down' | 'up') {
     const match = /^(?:p([12])_)?([a-z]+)$/.exec(control)
-    const button = match ? SNES_BUTTON_INDEX[match[2]] : undefined
+    const button = match ? system.buttonIndex[match[2]] : undefined
     if (!match || button === undefined) {
       console.warn('[Controller] Unknown control:', control)
       return
@@ -298,6 +258,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     if (!gameManager) return
     const player = match[1] === '2' ? 1 : 0
     const key = `${player}:${button}`
+    const pressValue = isAnalogAxis(button) ? ANALOG_MAX : 1
 
     // A tap's press and release can arrive within one frame over the network; the game only
     // samples input once per frame, so every press is held for a few frames before releasing
@@ -309,7 +270,7 @@ export default function SnesClient(props: { sessionId?: string }) {
         gameManager.simulateInput(player, button, 0)
         window.setTimeout(() => {
           pressStartedAtRef.current.set(key, performance.now())
-          getGameManager()?.simulateInput(player, button, 1)
+          getGameManager()?.simulateInput(player, button, pressValue)
         }, MIN_RELEASE_GAP_MS)
         return
       }
@@ -317,7 +278,7 @@ export default function SnesClient(props: { sessionId?: string }) {
 
     if (state === 'down') {
       pressStartedAtRef.current.set(key, performance.now())
-      gameManager.simulateInput(player, button, 1)
+      gameManager.simulateInput(player, button, pressValue)
       return
     }
 
@@ -330,6 +291,18 @@ export default function SnesClient(props: { sessionId?: string }) {
       pendingReleaseRef.current.delete(key)
       getGameManager()?.simulateInput(player, button, 0)
     }, wait))
+  }
+
+  // Each stick axis is two one-sided analog inputs, so the opposite side is zeroed on every update
+  function emitAnalog(playerId: string | undefined, x: number, y: number) {
+    const gameManager = getGameManager()
+    if (!gameManager) return
+    const player = playerId === '2' ? 1 : 0
+    const magnitude = (v: number) => Math.round(Math.min(1, Math.abs(v)) * ANALOG_MAX)
+    gameManager.simulateInput(player, x > 0 ? STICK_INDEX.right : STICK_INDEX.left, magnitude(x))
+    gameManager.simulateInput(player, x > 0 ? STICK_INDEX.left : STICK_INDEX.right, 0)
+    gameManager.simulateInput(player, y > 0 ? STICK_INDEX.down : STICK_INDEX.up, magnitude(y))
+    gameManager.simulateInput(player, y > 0 ? STICK_INDEX.up : STICK_INDEX.down, 0)
   }
 
   const captureGameScreenshot = async (gameName: string) => {
@@ -367,19 +340,19 @@ export default function SnesClient(props: { sessionId?: string }) {
     const origin = envHost
       ? `${envProto || (window.location.protocol.replace(':',''))}://${envHost}${envPort ? `:${envPort}` : ''}`
       : window.location.origin
-    return `${origin}/snes/${encodeURIComponent(sessionId)}/player/`
-  }, [sessionId])
+    return `${origin}/${system.id}/${encodeURIComponent(sessionId)}/player/`
+  }, [sessionId, system.id])
   const qr1 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '1')}` : '', [controllerBase])
   const qr2 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '2')}` : '', [controllerBase])
 
   useEffect(() => {
     setMounted(true)
-    ;(async () => setRoms(await listRoms()))()
+    ;(async () => setRoms(await listRoms(system.romDb)))()
     try {
       const stored = normalizeSaveCode(localStorage.getItem(SAVE_CODE_STORAGE_KEY) ?? '')
       if (stored) setSaveCode(stored)
     } catch {}
-  }, [])
+  }, [system.romDb])
 
   useEffect(() => {
     saveCodeRef.current = saveCode
@@ -495,15 +468,15 @@ export default function SnesClient(props: { sessionId?: string }) {
       }
       try {
         let data: any
-        try { data = await tryFetch('/snes/roms.json') } catch { /* ignore */ }
-        if (!data) { data = await tryFetch('/api/roms') }
+        try { data = await tryFetch(system.manifestUrl) } catch { /* ignore */ }
+        if (!data) { data = await tryFetch(`/api/roms?system=${system.id}`) }
         if (!cancelled) setRemoteRoms(Array.isArray(data) ? data : [])
       } catch (e: any) {
         if (!cancelled) setRemoteError(e?.message || 'Failed to load manifest')
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [system.manifestUrl, system.id])
 
   useEffect(() => {
     if (!mounted) return
@@ -516,7 +489,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       let url: string
       let gameName = ''
       if (usingLocal) {
-        const found = await getRom(activeRomLocal!)
+        const found = await getRom(system.romDb, activeRomLocal!)
         if (cancelled) return
         if (!found) { setStatus('ROM not found'); return }
         url = URL.createObjectURL(found.blob)
@@ -527,48 +500,20 @@ export default function SnesClient(props: { sessionId?: string }) {
       }
       const w = window as any
       w.EJS_player = '#ejs-container'
-      w.EJS_core = 'snes'
+      w.EJS_core = system.core
       w.EJS_gameName = gameName
       w.EJS_pathtodata = EJS_DATA_PATH
       w.EJS_gameUrl = url
       w.EJS_mobileDevices = true
       w.EJS_startOnLoaded = true
+      // Window globals outlive client-side navigation, so clear another console's bindings
+      w.EJS_defaultControls = system.defaultControls
 
-      currentGameKeyRef.current = gameKeyFor(gameName)
+      currentGameKeyRef.current = gameKeyFor(system, gameName)
       lastSramFingerprintRef.current = null
       sramReadyRef.current = false
       setCloudStatus(null)
       w.EJS_onGameStart = () => { void restoreCloudSramRef.current() }
-
-      w.EJS_controls = {
-        'p1_up': 'KeyW',
-        'p1_down': 'KeyS',
-        'p1_left': 'KeyA',
-        'p1_right': 'KeyD',
-        'p1_a': 'KeyX',
-        'p1_b': 'KeyZ',
-        'p1_x': 'KeyC',
-        'p1_y': 'KeyV',
-        'p1_l': 'KeyQ',
-        'p1_r': 'KeyE',
-        'p1_start': 'Enter',
-        'p1_select': 'ShiftLeft',
-
-        'p2_up': 'ArrowUp',
-        'p2_down': 'ArrowDown',
-        'p2_left': 'ArrowLeft',
-        'p2_right': 'ArrowRight',
-        'p2_a': 'KeyI',
-        'p2_b': 'KeyO',
-        'p2_x': 'KeyK',
-        'p2_y': 'KeyL',
-        'p2_l': 'KeyU',
-        'p2_r': 'KeyP',
-        'p2_start': 'Space',
-        'p2_select': 'ShiftRight'
-      }
-
-      w.EJS_keyboardControls = true
 
       try {
         setStatus('Starting emulator…')
@@ -594,6 +539,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       }
     })()
     return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeRomLocal, activeRomRemote, mounted])
 
   const saveState = async (): Promise<string> => {
@@ -605,6 +551,9 @@ export default function SnesClient(props: { sessionId?: string }) {
       gameManager.quickSave(1)
       if (!code || !game) return 'Game saved to this browser.'
       const state: Uint8Array = gameManager.getState()
+      if (state.length > MAX_SAVE_BYTES) {
+        return `Saved in this browser; this ${system.name} state is too large for cloud saves (${formatSize(state.length)}).`
+      }
       const ok = await uploadSave(code, game, 'state', state)
       return ok ? 'Game saved to the cloud.' : 'Saved in this browser, but the cloud upload failed.'
     } catch (error) {
@@ -679,18 +628,28 @@ export default function SnesClient(props: { sessionId?: string }) {
 
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return
+    const all = Array.from(files)
+    const accepted = all.filter((f) => isRomFileName(system, f.name))
+    const rejected = all.length - accepted.length
+    setRomUploadError(rejected > 0
+      ? `Skipped ${rejected} file${rejected === 1 ? '' : 's'}; ${system.name} ROMs must be ${system.romExtensions.map((e) => `.${e}`).join(', ')}.`
+      : null)
+    if (accepted.length === 0) return
     setLoading(true)
     try {
-      for (const f of Array.from(files)) { await putRom(f) }
-      setRoms(await listRoms())
+      for (const f of accepted) { await putRom(system.romDb, f) }
+      setRoms(await listRoms(system.romDb))
+    } catch (error) {
+      console.error('[ROMs] failed to store', error)
+      setRomUploadError('Could not store the ROM in this browser; it may be out of storage space.')
     } finally { setLoading(false) }
   }
 
   function onDrop(e: React.DragEvent) { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files) }
 
   const games = useMemo<GameEntry[]>(() => {
-    const searchLower = searchKey(search)
-    const matches = (s: string) => searchLower.length === 0 || searchKey(s).includes(searchLower)
+    const searchLower = searchKey(system, search)
+    const matches = (s: string) => searchLower.length === 0 || searchKey(system, s).includes(searchLower)
     const local: GameEntry[] = roms
       .filter(r => matches(r.name))
       .map(r => ({ kind: 'local', key: `local:${r.name}`, name: r.name, size: r.size }))
@@ -698,7 +657,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       .filter(r => matches(r.name) || matches(r.url))
       .map(r => ({ kind: 'remote', key: `remote:${r.url}`, name: r.name, rom: r }))
     return [...local, ...remote]
-  }, [roms, remoteRoms, search])
+  }, [roms, remoteRoms, search, system])
 
   const safeSelectedIndex = Math.min(selectedIndex, Math.max(0, games.length - 1))
 
@@ -812,11 +771,32 @@ export default function SnesClient(props: { sessionId?: string }) {
     emit(control, state)
   }
 
+  const stickNavRef = useRef(new Map<string, NavAction | null>())
+
+  const handleRemoteAnalog = (playerId: string | undefined, x: number, y: number) => {
+    if (interfaceStage === 'emulator' && !globalMenuOpen) {
+      emitAnalog(playerId, x, y)
+      return
+    }
+    // Releasing the stick must still reach the game, or it stays held after the menu closes
+    if (x === 0 && y === 0) emitAnalog(playerId, 0, 0)
+    // Menus move once per lean, like a d-pad tap
+    const key = playerId ?? '1'
+    let direction: NavAction | null = null
+    if (Math.max(Math.abs(x), Math.abs(y)) >= STICK_NAV_THRESHOLD) {
+      direction = Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : (y > 0 ? 'down' : 'up')
+    }
+    if (direction && direction !== stickNavRef.current.get(key)) navigate(direction, false)
+    stickNavRef.current.set(key, direction)
+  }
+
   const navigateRef = useRef(navigate)
   const remoteInputRef = useRef(handleRemoteInput)
+  const remoteAnalogRef = useRef(handleRemoteAnalog)
   useEffect(() => {
     navigateRef.current = navigate
     remoteInputRef.current = handleRemoteInput
+    remoteAnalogRef.current = handleRemoteAnalog
   })
 
   const navActive = interfaceStage !== 'emulator' || globalMenuOpen
@@ -867,7 +847,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     document.body.style.overflow = 'hidden'
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (GAME_KEYS.has(event.code) && !isEditableTarget(event.target)) event.preventDefault()
+      if (system.gameKeys.includes(event.code) && !isEditableTarget(event.target)) event.preventDefault()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => {
@@ -875,7 +855,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       document.body.style.overflow = prevBody
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [interfaceStage])
+  }, [interfaceStage, system])
 
   // Pusher subscription only
   useEffect(() => {
@@ -883,13 +863,21 @@ export default function SnesClient(props: { sessionId?: string }) {
     if (!usePusher) return
     setPusherStatus('subscribing')
     const p = new Pusher(pusherKey!, { cluster: pusherCluster!, forceTLS: true, enableStats: true, wsHost: undefined })
-    const channelName = `snes-${sessionId}`
+    const channelName = pusherChannelFor(system.id, sessionId)
     const ch = p.subscribe(channelName)
     ch.bind('pusher:subscription_succeeded', () => setPusherStatus('subscribed'))
     ch.bind('pusher:error', (err: any) => { console.error('[pusher] error', err); setPusherStatus('error') })
     p.connection.bind('error', (err: any) => { console.error('[pusher] conn error', err) })
     ch.bind('input', (data: any) => {
-      if (data?.type !== 'input' || data?.input?.type !== 'button') return
+      if (data?.type !== 'input') return
+      if (data.input?.type === 'analog') {
+        const { x, y } = data.input
+        if (system.hasAnalogStick && Number.isFinite(x) && Number.isFinite(y)) {
+          remoteAnalogRef.current(data.playerId, x, y)
+        }
+        return
+      }
+      if (data.input?.type !== 'button') return
       const { control, state } = data.input
       if ((state === 'down' || state === 'up') && typeof control === 'string') {
         remoteInputRef.current(control, state)
@@ -905,7 +893,7 @@ export default function SnesClient(props: { sessionId?: string }) {
       try { ch.unbind_all(); p.unsubscribe(channelName); p.disconnect() } catch {}
       setPusherStatus('idle')
     }
-  }, [sessionId, usePusher, pusherKey, pusherCluster])
+  }, [sessionId, usePusher, pusherKey, pusherCluster, system])
 
   // Transition to game selection when controller connects
   useEffect(() => {
@@ -924,11 +912,25 @@ export default function SnesClient(props: { sessionId?: string }) {
     return (
       <div className="py-10 flex flex-col items-center gap-12 text-center">
         <div className="space-y-4 max-w-3xl">
-          <h1 className="text-4xl font-bold">Play SNES together</h1>
+          <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-sm">
+            {Object.values(RETRO_SYSTEMS).map((s) => (
+              s.id === system.id ? (
+                <span key={s.id} className="rounded-full bg-primary/30 px-4 py-1.5 font-medium text-white">{s.name}</span>
+              ) : (
+                <Link key={s.id} href={`/${s.id}`} className="rounded-full px-4 py-1.5 text-white/60 hover:text-white">{s.name}</Link>
+              )
+            ))}
+          </div>
+          <h1 className="text-4xl font-bold">Play {system.name} together</h1>
           <p className="text-lg text-white/70">
             Choose how you want to control the game. You can play right here with a keyboard or connect
             up to two phones as wireless controllers.
           </p>
+          {system.id === 'n64' && (
+            <p className="text-sm text-white/50">
+              N64 emulation is much heavier than SNES. A laptop or desktop host runs best; phones work great as controllers.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
@@ -944,7 +946,7 @@ export default function SnesClient(props: { sessionId?: string }) {
               <div className="text-sm uppercase tracking-wide text-white/60">Option 1</div>
               <div className="text-2xl font-semibold">Use this keyboard</div>
               <p className="text-sm text-white/70">
-                Start playing immediately. Keyboard controls support two players (WASD + Arrow keys) and work without a phone.
+                {system.keyboardBlurb}
               </p>
               <div className="text-xs text-white/50">Best for quick local play</div>
             </div>
@@ -962,7 +964,7 @@ export default function SnesClient(props: { sessionId?: string }) {
               <div className="text-sm uppercase tracking-wide text-white/60">Option 2</div>
               <div className="text-2xl font-semibold">Connect phones</div>
               <p className="text-sm text-white/70">
-                Generate QR codes for players to scan. Each phone becomes a dedicated SNES controller with haptics.
+                Generate QR codes for players to scan. {system.controllerBlurb}
               </p>
               <div className="text-xs text-white/50">Perfect for couch co-op</div>
             </div>
@@ -982,7 +984,7 @@ export default function SnesClient(props: { sessionId?: string }) {
     return (
       <div className="py-6 flex flex-col items-center justify-center min-h-[80vh] space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">SNES Emulator</h1>
+          <h1 className="text-4xl font-bold">{system.name} Emulator</h1>
           <p className="text-xl text-white/70">Connect your mobile controller to start</p>
         </div>
 
@@ -1135,18 +1137,18 @@ export default function SnesClient(props: { sessionId?: string }) {
                     {screenshot ? (
                       <img
                         src={screenshot}
-                        alt={`${prettifyName(game.name)} preview`}
+                        alt={`${prettifyName(system, game.name)} preview`}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-4xl text-white/30">
-                        {prettifyName(game.name).charAt(0).toUpperCase()}
+                        {prettifyName(system, game.name).charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="p-3 flex items-end justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-medium truncate">{prettifyName(game.name)}</div>
+                      <div className="font-medium truncate">{prettifyName(system, game.name)}</div>
                       <div className="text-xs text-white/50">
                         {game.kind === 'local' ? formatSize(game.size) : 'Remote'}
                       </div>
@@ -1157,8 +1159,8 @@ export default function SnesClient(props: { sessionId?: string }) {
                         title="Delete from library"
                         onClick={async (e) => {
                           e.stopPropagation()
-                          await deleteRom(game.name)
-                          setRoms(await listRoms())
+                          await deleteRom(system.romDb, game.name)
+                          setRoms(await listRoms(system.romDb))
                         }}
                       >
                         remove
@@ -1184,13 +1186,15 @@ export default function SnesClient(props: { sessionId?: string }) {
           >
             <p className="mb-2">Drag and drop ROMs here</p>
             <button className="px-3 py-1.5 rounded bg-primary/20 hover:bg-primary text-white" onClick={() => fileInputRef.current?.click()} disabled={loading}>{loading ? 'Adding…' : 'Add ROMs'}</button>
-            <input ref={fileInputRef} type="file" accept=".smc,.sfc,.fig,.swc,.zip,.7z,application/zip,application/x-7z-compressed,application/octet-stream" multiple className="hidden" onChange={(e) => handleFiles(e.currentTarget.files)} />
-            <p className="mt-2 text-xs text-white/50">ROM files are stored only in this browser; on a new browser, add them again or use the shared library. Only load ROMs you own rights to.</p>
+            <input ref={fileInputRef} type="file" accept={romAcceptAttribute(system)} multiple className="hidden" onChange={(e) => { handleFiles(e.currentTarget.files); e.currentTarget.value = '' }} />
+            {romUploadError && <p className="mt-2 text-xs text-red-400">{romUploadError}</p>}
+            <p className="mt-2 text-xs text-white/50">
+              {system.name} ROMs ({system.romExtensions.map((e) => `.${e}`).join(', ')}) are stored only in this browser; on a new browser, add them again or use the shared library. Only load ROMs you own rights to.
+            </p>
           </div>
           <div className="text-xs text-white/60 space-y-2">
             <div className="font-medium text-white/80">In-game keyboard controls</div>
-            <div>P1: WASD move · X Z C V = A B X Y · Q E = L R · Enter / L-Shift = Start / Select</div>
-            <div>P2: Arrows move · I O K L = A B X Y · U P = L R · Space / R-Shift = Start / Select</div>
+            {system.keyboardHelp.map((line) => <div key={line}>{line}</div>)}
             <div className="text-white/50">Controllers connected: {controllerCount} · Pusher: {usePusher ? pusherStatus : 'disabled'}</div>
           </div>
         </div>
