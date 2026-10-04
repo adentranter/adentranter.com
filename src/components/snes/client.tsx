@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Pusher from 'pusher-js'
 import { deleteRom, getRom, listRoms, putRom, type StoredRomMeta } from "@/lib/idb-roms"
 import {
@@ -72,6 +73,22 @@ const KEYMAP: Record<string, string> = {
 }
 
 const GAME_KEYS = new Set(Object.values(KEYMAP))
+
+// RetroArch joypad button ids used by EmulatorJS's simulateInput
+const SNES_BUTTON_INDEX: Record<string, number> = {
+  b: 0,
+  y: 1,
+  select: 2,
+  start: 3,
+  up: 4,
+  down: 5,
+  left: 6,
+  right: 7,
+  a: 8,
+  x: 9,
+  l: 10,
+  r: 11,
+}
 
 // Menu navigation: d-pad/arrows/WASD move, SNES A (X / I) confirms, SNES B (Z / O) goes back
 const NAV_KEYS: Record<string, NavAction> = {
@@ -262,60 +279,19 @@ export default function SnesClient(props: { sessionId?: string }) {
     [saveCode]
   )
 
+  // EmulatorJS matches keyboard input on keyCode, which synthetic KeyboardEvents can't set,
+  // so phone presses go straight to the emulator's input API instead
   function emit(control: string, state: 'down' | 'up') {
-    const code = KEYMAP[control]
-    if (!code) {
+    const match = /^(?:p([12])_)?([a-z]+)$/.exec(control)
+    const button = match ? SNES_BUTTON_INDEX[match[2]] : undefined
+    if (!match || button === undefined) {
       console.warn('[Controller] Unknown control:', control)
       return
     }
-    const type = state === 'down' ? 'keydown' : 'keyup'
-    let key: string | undefined
-    if (code.startsWith('Key')) key = code.slice(3).toLowerCase()
-    else if (code.startsWith('Arrow')) key = code
-    else if (code.startsWith('Shift')) key = 'Shift'
-    else if (code === 'Enter') key = 'Enter'
-    else if (code === 'Space') key = ' '
-
-    const ev = new KeyboardEvent(type, {
-      key,
-      code,
-      bubbles: true,
-      cancelable: true,
-      composed: true
-    })
-
-    const canvas = document.querySelector('#ejs-container canvas') as HTMLCanvasElement | null
-    const iframe = document.querySelector('#ejs-container iframe') as HTMLIFrameElement | null
-
-    let dispatched = false
-
-    if (canvas) {
-      try { canvas.focus() } catch {}
-      try { canvas.dispatchEvent(ev); dispatched = true } catch (error) {
-        console.warn('[Controller] Failed to dispatch to canvas', error)
-      }
-    }
-
-    if (iframe) {
-      try { iframe.focus() } catch {}
-      try { iframe.dispatchEvent(ev); dispatched = true } catch (error) {
-        console.warn('[Controller] Failed to dispatch to iframe element', error)
-      }
-      try {
-        iframe.contentWindow?.dispatchEvent(ev)
-        dispatched = true
-      } catch (error) {
-        console.warn('[Controller] Failed to dispatch to iframe window', error)
-      }
-    }
-
-    // Always mirror the event onto document/window to satisfy EmulatorJS listeners
-    try { window.dispatchEvent(ev) } catch (error) { console.warn('[Controller] Failed to dispatch to window', error) }
-    try { document.dispatchEvent(ev) } catch (error) { console.warn('[Controller] Failed to dispatch to document', error) }
-
-    if (!dispatched) {
-      console.warn('[Controller] No emulator target detected for event', { control, state })
-    }
+    const gameManager = getGameManager()
+    if (!gameManager) return
+    const player = match[1] === '2' ? 1 : 0
+    gameManager.simulateInput(player, button, state === 'down' ? 1 : 0)
   }
 
   const captureGameScreenshot = async (gameName: string) => {
@@ -1184,8 +1160,8 @@ export default function SnesClient(props: { sessionId?: string }) {
     )
   }
 
-  // Emulator stage: full-window game view
-  return (
+  // Emulator stage: full-window game view, portalled out of <main>'s stacking context so the navbar can't cover it
+  return createPortal(
     <div className="fixed inset-0 z-[60] bg-black">
       <div
         id="ejs-container"
@@ -1261,6 +1237,7 @@ export default function SnesClient(props: { sessionId?: string }) {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
