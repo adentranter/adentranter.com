@@ -38,7 +38,7 @@ This project includes SNES (`/snes`) and N64 (`/n64`) emulators with mobile cont
 ROMs:
 - Players add ROMs they own from the game picker; they are stored only in that browser's IndexedDB (separate libraries per console).
 - SNES accepts `.smc`, `.sfc`, `.fig`, `.swc`, `.zip`, `.7z`; N64 accepts `.z64`, `.n64`, `.v64`, `.zip`, `.7z`. No BIOS is needed for either.
-- An optional shared library is listed from `public/roms`, `public/snes`, `public/@roms` (SNES) and `public/n64` (N64) via `GET /api/roms?system=snes|n64`.
+- An optional shared library is listed from `public/roms`, `public/snes`, `public/@roms` (SNES) and `public/roms/n64`, `public/n64` (N64) via `GET /api/roms?system=snes|n64`.
 
 N64 notes:
 - The phone controller has a floating analog stick, A/B, C buttons, L/Z/R, Start and a compact D-pad. Stick movement is sent as coalesced analog updates (at most ~20/s, only when the value changes), which count toward Pusher message usage.

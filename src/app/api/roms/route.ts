@@ -16,7 +16,8 @@ async function listDir(system: RetroSystem, dirAbs: string, urlBase: string): Pr
       if (e.isDirectory()) continue
       const name = e.name
       if (!isRomFileName(system, name)) continue
-      out.push({ name, url: path.posix.join(urlBase, name) })
+      // Static files with commas in their names only resolve when the URL is percent-encoded
+      out.push({ name, url: path.posix.join(urlBase, encodeURIComponent(name)) })
     }
     return out
   } catch {

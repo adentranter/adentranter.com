@@ -79,7 +79,10 @@ const N64: RetroSystem = {
   core: 'n64',
   romExtensions: ['z64', 'n64', 'v64', 'zip', '7z'],
   romDb: 'n64-roms',
-  romDirs: [{ dir: 'n64', url: '/n64' }],
+  romDirs: [
+    { dir: 'roms/n64', url: '/roms/n64' },
+    { dir: 'n64', url: '/n64' },
+  ],
   manifestUrl: '/n64/roms.json',
   saveKeyPrefix: 'n64:',
   buttonIndex: {
@@ -160,8 +163,11 @@ export function isRomFileName(system: RetroSystem, name: string) {
   return name.includes('.') && system.romExtensions.includes(ext)
 }
 
+// Handles archives named after the ROM inside them, e.g. "Game.n64.zip"
 export function stripRomExtension(system: RetroSystem, name: string) {
-  return isRomFileName(system, name) ? name.slice(0, name.lastIndexOf('.')) : name
+  let out = name
+  for (let i = 0; i < 2 && isRomFileName(system, out); i++) out = out.slice(0, out.lastIndexOf('.'))
+  return out
 }
 
 export function romAcceptAttribute(system: RetroSystem) {
