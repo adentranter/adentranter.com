@@ -16,6 +16,12 @@ export type RetroSystem = {
   // RetroArch joypad ids used by EmulatorJS's simulateInput
   buttonIndex: Record<string, number>
   hasAnalogStick: boolean
+  // W3C "standard" gamepad button index -> control name
+  gamepadButtons: Record<number, string>
+  // SNES has no analog stick, so a gamepad's left stick doubles as its d-pad
+  gamepadLeftStick: 'dpad' | 'analog'
+  // Digital controls pressed when the right stick leans past a threshold
+  gamepadRightStick?: { right: string; left: string; down: string; up: string }
   // Replaces EmulatorJS's built-in keyboard defaults, so every player must be present (key names follow its keyMap)
   defaultControls?: Record<number, Record<number, KeyBinding>>
   // KeyboardEvent.code values that should not scroll the page during play
@@ -61,6 +67,22 @@ const SNES: RetroSystem = {
     r: 11,
   },
   hasAnalogStick: false,
+  // By position, matching the SNES layout: bottom = B, right = A, left = Y, top = X
+  gamepadButtons: {
+    0: 'b',
+    1: 'a',
+    2: 'y',
+    3: 'x',
+    4: 'l',
+    5: 'r',
+    8: 'select',
+    9: 'start',
+    12: 'up',
+    13: 'down',
+    14: 'left',
+    15: 'right',
+  },
+  gamepadLeftStick: 'dpad',
   gameKeys: [
     'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyX', 'KeyZ', 'KeyC', 'KeyV', 'KeyQ', 'KeyE', 'Enter', 'ShiftLeft',
     'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyI', 'KeyO', 'KeyK', 'KeyL', 'KeyU', 'KeyP', 'Space', 'ShiftRight',
@@ -102,6 +124,24 @@ const N64: RetroSystem = {
     cup: 23,
   },
   hasAnalogStick: true,
+  // Bottom = A and left = B like RetroArch; right/top cover C buttons on pads without a right stick
+  gamepadButtons: {
+    0: 'a',
+    1: 'cdown',
+    2: 'b',
+    3: 'cleft',
+    4: 'l',
+    5: 'r',
+    6: 'z',
+    7: 'z',
+    9: 'start',
+    12: 'up',
+    13: 'down',
+    14: 'left',
+    15: 'right',
+  },
+  gamepadLeftStick: 'analog',
+  gamepadRightStick: { right: 'cright', left: 'cleft', down: 'cdown', up: 'cup' },
   defaultControls: {
     0: {
       0: { value: 'x' },

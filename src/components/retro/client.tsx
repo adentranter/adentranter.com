@@ -27,6 +27,8 @@ import {
   type RetroSystem,
   type RetroSystemId,
 } from "@/lib/retro/systems"
+import { useGamepads } from "./use-gamepads"
+import { installAudioUnlock, isEmulatorAudioBlocked } from "./audio-unlock"
 
 type RemoteRom = { name: string; url: string }
 
@@ -182,6 +184,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
   const [remoteRoms, setRemoteRoms] = useState<RemoteRom[] | null>(null)
   const [remoteError, setRemoteError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [audioBlocked, setAudioBlocked] = useState(false)
 
   const [sessionId, setSessionId] = useState<string | null>(props.sessionId || null)
   const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
@@ -513,7 +516,11 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
       lastSramFingerprintRef.current = null
       sramReadyRef.current = false
       setCloudStatus(null)
-      w.EJS_onGameStart = () => { void restoreCloudSramRef.current() }
+      w.EJS_onGameStart = () => {
+        // Gamepads are read by useGamepads; EmulatorJS's own poller would double inputs and only binds player 1
+        try { w.EJS_emulator?.gamepad?.terminate?.() } catch {}
+        void restoreCloudSramRef.current()
+      }
 
       try {
         setStatus('Starting emulator…')
@@ -614,6 +621,17 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
     setGlobalMenuIndex(0)
     setGlobalMenuStatus(null)
   }, [globalMenuOpen])
+
+  useEffect(() => installAudioUnlock(), [])
+
+  useEffect(() => {
+    if (interfaceStage !== 'emulator') return
+    const id = window.setInterval(() => setAudioBlocked(isEmulatorAudioBlocked()), 300)
+    return () => {
+      window.clearInterval(id)
+      setAudioBlocked(false)
+    }
+  }, [interfaceStage])
 
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement)
@@ -790,13 +808,26 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
     stickNavRef.current.set(key, direction)
   }
 
+  const handleGamepadConnect = () => {
+    if (interfaceStage === 'landing' || interfaceStage === 'qr') setInterfaceStage('gameSelection')
+  }
+
   const navigateRef = useRef(navigate)
   const remoteInputRef = useRef(handleRemoteInput)
   const remoteAnalogRef = useRef(handleRemoteAnalog)
+  const gamepadConnectRef = useRef(handleGamepadConnect)
   useEffect(() => {
     navigateRef.current = navigate
     remoteInputRef.current = handleRemoteInput
     remoteAnalogRef.current = handleRemoteAnalog
+    gamepadConnectRef.current = handleGamepadConnect
+  })
+
+  const gamepads = useGamepads(system, {
+    onButton: (player, control, state) => remoteInputRef.current(`p${player}_${control}`, state),
+    onStick: (player, x, y) => remoteAnalogRef.current(String(player), x, y),
+    onMenu: () => remoteInputRef.current('__menu', 'down'),
+    onConnect: () => gamepadConnectRef.current(),
   })
 
   const navActive = interfaceStage !== 'emulator' || globalMenuOpen
@@ -924,7 +955,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
           <h1 className="text-4xl font-bold">Play {system.name} together</h1>
           <p className="text-lg text-white/70">
             Choose how you want to control the game. You can play right here with a keyboard or connect
-            up to two phones as wireless controllers.
+            up to two phones as wireless controllers. Bluetooth or USB gamepads work too.
           </p>
           {system.id === 'n64' && (
             <p className="text-sm text-white/50">
@@ -973,6 +1004,10 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
 
         <div className="text-sm text-white/50 space-y-1">
           <div>Arrow keys to choose · A (X) or Enter to continue</div>
+          <div>Bluetooth/USB gamepads: press any button to connect (up to 2)</div>
+          {gamepads.map((pad) => (
+            <div key={pad.player} className="text-green-400">Gamepad P{pad.player}: {pad.name}</div>
+          ))}
           <div>Session code: {sessionId ?? 'Generating…'}</div>
           <div>Pusher status: {usePusher ? pusherStatus : 'disabled'}</div>
         </div>
@@ -1195,6 +1230,11 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
           <div className="text-xs text-white/60 space-y-2">
             <div className="font-medium text-white/80">In-game keyboard controls</div>
             {system.keyboardHelp.map((line) => <div key={line}>{line}</div>)}
+            <div className="font-medium text-white/80 pt-1">Gamepads</div>
+            <div>Up to two Bluetooth/USB gamepads, one per player. Press any button to connect. Home or Select + Start opens the in-game menu.</div>
+            {gamepads.length === 0
+              ? <div className="text-white/50">No gamepads connected</div>
+              : gamepads.map((pad) => <div key={pad.player} className="text-green-400">P{pad.player}: {pad.name}</div>)}
             <div className="text-white/50">Controllers connected: {controllerCount} · Pusher: {usePusher ? pusherStatus : 'disabled'}</div>
           </div>
         </div>
@@ -1226,6 +1266,9 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
         <div className="text-center text-xs text-white/60">
           {status && <div className="text-sm text-white/70">{status}</div>}
           {cloudStatus && <div>{cloudStatus}</div>}
+          {gamepads.length > 0 && (
+            <div>{gamepads.map((pad) => `P${pad.player}: ${pad.name}`).join(' · ')}</div>
+          )}
         </div>
         <button
           onClick={toggleFullscreen}
@@ -1235,6 +1278,17 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
           {isFullscreen ? 'Exit FS' : 'FS'}
         </button>
       </div>
+
+      {audioBlocked && !globalMenuOpen && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center px-4">
+          <div className="max-w-md rounded-xl border border-white/15 bg-black/85 px-5 py-3 text-center shadow-xl">
+            <div className="font-medium text-white">Click or press any key to start</div>
+            <div className="text-xs text-white/60">
+              Browsers need one click or key press before a game can play sound. Gamepad buttons don&apos;t count.
+            </div>
+          </div>
+        </div>
+      )}
 
       {globalMenuOpen && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
@@ -1248,7 +1302,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
             <div className="space-y-1 text-center">
               <h2 className="text-xl font-semibold">Controller menu</h2>
               <p className="text-sm text-white/70">
-                Use the D-pad or arrow keys to highlight an option. A confirms, B closes.
+                Use the D-pad, stick or arrow keys to highlight an option. A confirms, B closes.
               </p>
             </div>
             <div className="space-y-2">
@@ -1275,7 +1329,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
             {globalMenuStatus && (
               <div className="text-center text-xs text-white/70">{globalMenuStatus}</div>
             )}
-            <div className="text-center text-[11px] text-white/40">Press Menu again to close this panel.</div>
+            <div className="text-center text-[11px] text-white/40">Press Menu again (or Home / Select + Start on a gamepad) to close this panel.</div>
           </div>
         </div>
       )}
