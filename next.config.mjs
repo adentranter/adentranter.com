@@ -17,6 +17,15 @@ const nextConfig = {
   },
   output: 'standalone',
 
+  async redirects() {
+    return [
+      { source: '/snes', destination: '/games/snes', permanent: true },
+      { source: '/snes/:path*', destination: '/games/snes/:path*', permanent: true },
+      { source: '/n64', destination: '/games/n64', permanent: true },
+      { source: '/n64/:path*', destination: '/games/n64/:path*', permanent: true },
+    ]
+  },
+
   images: {
     remotePatterns: [
       {

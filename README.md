@@ -29,16 +29,16 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## SNES and N64
+## Games (SNES, N64, PS1)
 
-This project includes SNES (`/snes`) and N64 (`/n64`) emulators with mobile controllers via Pusher. Both run
+This project includes SNES, N64 and PS1 emulators under `/games/[system]` with mobile controllers via Pusher. They run
 [EmulatorJS](https://emulatorjs.org) from its CDN and share one session/controller flow, configured per console in
-`src/lib/retro/systems.ts`.
+`src/lib/retro/systems.ts`. The old `/snes` and `/n64` URLs permanently redirect to `/games/snes` and `/games/n64`.
 
 ROMs:
 - Players add ROMs they own from the game picker; they are stored only in that browser's IndexedDB (separate libraries per console).
-- SNES accepts `.smc`, `.sfc`, `.fig`, `.swc`, `.zip`, `.7z`; N64 accepts `.z64`, `.n64`, `.v64`, `.zip`, `.7z`. No BIOS is needed for either.
-- An optional shared library is listed from `public/roms`, `public/snes`, `public/@roms` (SNES) and `public/roms/n64`, `public/n64` (N64) via `GET /api/roms?system=snes|n64`.
+- SNES accepts `.smc`, `.sfc`, `.fig`, `.swc`, `.zip`, `.7z`; N64 accepts `.z64`, `.n64`, `.v64`, `.zip`, `.7z`; PS1 accepts `.chd`, `.pbp`, `.bin`, `.iso`, `.img`, `.zip`, `.7z` (zip multi-track `.cue`/`.bin` discs together). No BIOS is needed for any of them.
+- An optional shared library is listed from `public/roms`, `public/@roms` (SNES), `public/roms/n64` (N64) and `public/roms/ps1` (PS1) via `GET /api/roms?system=snes|n64|ps1`. PS1 discs are large and get baked into the Docker image, so prefer `.chd`.
 
 N64 notes:
 - The phone controller has a floating analog stick, A/B, C buttons, L/Z/R, Start and a compact D-pad. Stick movement is sent as coalesced analog updates (at most ~20/s, only when the value changes), which count toward Pusher message usage.
@@ -185,9 +185,8 @@ The route derives the caller IP from `x-forwarded-for` (or accepts an optional
 - `POST /api/home/logout` — clears the session cookie.
 
 Flow:
-- Visiting `/snes` redirects to a new session at `/snes/[session]`.
-- That page shows the game area, local/remote ROMs, and QR codes for controllers at `/snes/[session]/player/1` and `/snes/[session]/player/2`.
-- `/n64` works the same way, with controllers at `/n64/[session]/player/1|2`.
+- Visiting `/games` redirects to a new SNES session at `/games/snes/[session]`; `/games/n64` and `/games/ps1` do the same for those consoles.
+- That page shows the console switch, game area, local/remote ROMs, and QR codes for controllers at `/games/[system]/[session]/player/1` and `/games/[system]/[session]/player/2`.
 - The controller page has no navbar and registers with the host so you should see Pusher status and a controller count.
 
 ## Deploy on Vercel

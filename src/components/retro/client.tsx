@@ -80,8 +80,10 @@ const NAV_CONTROLS: Record<string, NavAction> = {
   left: 'left',
   right: 'right',
   a: 'confirm',
+  cross: 'confirm',
   start: 'confirm',
   b: 'back',
+  circle: 'back',
 }
 
 function formatSize(bytes: number) {
@@ -251,7 +253,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
   // EmulatorJS matches keyboard input on keyCode, which synthetic KeyboardEvents can't set,
   // so phone presses go straight to the emulator's input API instead
   function emit(control: string, state: 'down' | 'up') {
-    const match = /^(?:p([12])_)?([a-z]+)$/.exec(control)
+    const match = /^(?:p([12])_)?([a-z0-9]+)$/.exec(control)
     const button = match ? system.buttonIndex[match[2]] : undefined
     if (!match || button === undefined) {
       console.warn('[Controller] Unknown control:', control)
@@ -343,7 +345,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
     const origin = envHost
       ? `${envProto || (window.location.protocol.replace(':',''))}://${envHost}${envPort ? `:${envPort}` : ''}`
       : window.location.origin
-    return `${origin}/${system.id}/${encodeURIComponent(sessionId)}/player/`
+    return `${origin}/games/${system.id}/${encodeURIComponent(sessionId)}/player/`
   }, [sessionId, system.id])
   const qr1 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '1')}` : '', [controllerBase])
   const qr2 = useMemo(() => controllerBase ? `/api/qr?size=180&text=${encodeURIComponent(controllerBase + '2')}` : '', [controllerBase])
@@ -464,22 +466,17 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      async function tryFetch(url: string) {
-        const res = await fetch(url, { cache: 'no-store' })
-        if (!res.ok) throw new Error(`${res.status}`)
-        return res.json()
-      }
       try {
-        let data: any
-        try { data = await tryFetch(system.manifestUrl) } catch { /* ignore */ }
-        if (!data) { data = await tryFetch(`/api/roms?system=${system.id}`) }
+        const res = await fetch(`/api/roms?system=${system.id}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error(`${res.status}`)
+        const data = await res.json()
         if (!cancelled) setRemoteRoms(Array.isArray(data) ? data : [])
       } catch (e: any) {
         if (!cancelled) setRemoteError(e?.message || 'Failed to load manifest')
       }
     })()
     return () => { cancelled = true }
-  }, [system.manifestUrl, system.id])
+  }, [system.id])
 
   useEffect(() => {
     if (!mounted) return
@@ -948,7 +945,7 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
               s.id === system.id ? (
                 <span key={s.id} className="rounded-full bg-primary/30 px-4 py-1.5 font-medium text-white">{s.name}</span>
               ) : (
-                <Link key={s.id} href={`/${s.id}`} className="rounded-full px-4 py-1.5 text-white/60 hover:text-white">{s.name}</Link>
+                <Link key={s.id} href={`/games/${s.id}`} className="rounded-full px-4 py-1.5 text-white/60 hover:text-white">{s.name}</Link>
               )
             ))}
           </div>
@@ -960,6 +957,11 @@ export default function RetroClient(props: { system: RetroSystemId; sessionId?: 
           {system.id === 'n64' && (
             <p className="text-sm text-white/50">
               N64 emulation is much heavier than SNES. A laptop or desktop host runs best; phones work great as controllers.
+            </p>
+          )}
+          {system.id === 'ps1' && (
+            <p className="text-sm text-white/50">
+              PS1 discs are large, so the first load can take a while. Compressed .chd or .pbp images load fastest.
             </p>
           )}
         </div>

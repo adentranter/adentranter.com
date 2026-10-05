@@ -11,10 +11,8 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/home",
           "/home/",
-          "/snes",
-          "/snes/",
-          "/n64",
-          "/n64/",
+          "/games",
+          "/games/",
           "/forthelols",
           "/forthelols/",
           "/disableDefend",

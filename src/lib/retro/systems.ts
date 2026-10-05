@@ -1,4 +1,4 @@
-export type RetroSystemId = 'snes' | 'n64'
+export type RetroSystemId = 'snes' | 'n64' | 'ps1'
 
 type KeyBinding = { value: string }
 
@@ -10,7 +10,6 @@ export type RetroSystem = {
   romExtensions: readonly string[]
   romDb: string
   romDirs: readonly { dir: string; url: string }[]
-  manifestUrl: string
   // Prepended to cloud save game keys; SNES has none so its existing saves stay readable
   saveKeyPrefix: string
   // RetroArch joypad ids used by EmulatorJS's simulateInput
@@ -47,10 +46,8 @@ const SNES: RetroSystem = {
   romDb: 'snes-roms',
   romDirs: [
     { dir: 'roms', url: '/roms' },
-    { dir: 'snes', url: '/snes' },
     { dir: '@roms', url: '/@roms' },
   ],
-  manifestUrl: '/snes/roms.json',
   saveKeyPrefix: '',
   buttonIndex: {
     b: 0,
@@ -103,9 +100,7 @@ const N64: RetroSystem = {
   romDb: 'n64-roms',
   romDirs: [
     { dir: 'roms/n64', url: '/roms/n64' },
-    { dir: 'n64', url: '/n64' },
   ],
-  manifestUrl: '/n64/roms.json',
   saveKeyPrefix: 'n64:',
   buttonIndex: {
     a: 0,
@@ -186,7 +181,99 @@ const N64: RetroSystem = {
   controllerBlurb: 'Each phone becomes an N64 controller with an analog stick, C buttons and Z.',
 }
 
-export const RETRO_SYSTEMS: Record<RetroSystemId, RetroSystem> = { snes: SNES, n64: N64 }
+const PS1: RetroSystem = {
+  id: 'ps1',
+  name: 'PS1',
+  // pcsx_rearmed ships a high-level BIOS, so no BIOS file is needed
+  core: 'psx',
+  // A loose .cue can't reach its .bin tracks, so multi-track discs need to be zipped together
+  romExtensions: ['chd', 'pbp', 'bin', 'iso', 'img', 'zip', '7z'],
+  romDb: 'ps1-roms',
+  romDirs: [
+    { dir: 'roms/ps1', url: '/roms/ps1' },
+  ],
+  saveKeyPrefix: 'ps1:',
+  buttonIndex: {
+    cross: 0,
+    square: 1,
+    select: 2,
+    start: 3,
+    up: 4,
+    down: 5,
+    left: 6,
+    right: 7,
+    circle: 8,
+    triangle: 9,
+    l1: 10,
+    r1: 11,
+    l2: 12,
+    r2: 13,
+  },
+  hasAnalogStick: false,
+  gamepadButtons: {
+    0: 'cross',
+    1: 'circle',
+    2: 'square',
+    3: 'triangle',
+    4: 'l1',
+    5: 'r1',
+    6: 'l2',
+    7: 'r2',
+    8: 'select',
+    9: 'start',
+    12: 'up',
+    13: 'down',
+    14: 'left',
+    15: 'right',
+  },
+  gamepadLeftStick: 'dpad',
+  defaultControls: {
+    0: {
+      0: { value: 'x' },
+      1: { value: 'z' },
+      2: { value: 'v' },
+      3: { value: 'enter' },
+      4: { value: 'up arrow' },
+      5: { value: 'down arrow' },
+      6: { value: 'left arrow' },
+      7: { value: 'right arrow' },
+      8: { value: 'c' },
+      9: { value: 's' },
+      10: { value: 'q' },
+      11: { value: 'e' },
+      12: { value: 'a' },
+      13: { value: 'd' },
+      14: { value: '' },
+      15: { value: '' },
+      16: { value: '' },
+      17: { value: '' },
+      18: { value: '' },
+      19: { value: '' },
+      20: { value: '' },
+      21: { value: '' },
+      22: { value: '' },
+      23: { value: '' },
+      24: { value: '1' },
+      25: { value: '2' },
+      26: { value: '3' },
+    },
+    1: {},
+    2: {},
+    3: {},
+  },
+  gameKeys: [
+    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyX', 'KeyZ', 'KeyC', 'KeyS',
+    'KeyQ', 'KeyE', 'KeyA', 'KeyD', 'KeyV', 'Enter',
+  ],
+  keyboardHelp: [
+    'Arrows = D-pad · X = Cross · C = Circle · Z = Square · S = Triangle',
+    'Q E = L1 R1 · A D = L2 R2 · Enter / V = Start / Select · Phones can join as player 1 or 2',
+  ],
+  keyboardBlurb: 'Start playing immediately with the arrow keys as the D-pad. Works without a phone.',
+  controllerBlurb: 'Each phone becomes a PS1 controller with shapes, L1/L2 and R1/R2.',
+}
+
+export const RETRO_SYSTEMS: Record<RetroSystemId, RetroSystem> = { snes: SNES, n64: N64, ps1: PS1 }
 
 export const RETRO_SYSTEM_IDS = Object.keys(RETRO_SYSTEMS) as RetroSystemId[]
 

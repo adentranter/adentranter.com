@@ -4,13 +4,12 @@ import { connection } from "next/server"
 import { randomUUID } from "crypto"
 
 export const metadata: Metadata = {
-  title: "SNES",
+  title: "Games",
   robots: { index: false, follow: false },
 }
 
-export default async function SnesPage() {
+export default async function GamesPage() {
   // Without this the redirect is prerendered and every visitor shares one session id
   await connection()
-  const sid = randomUUID()
-  redirect(`/snes/${encodeURIComponent(sid)}`)
+  redirect(`/games/snes/${encodeURIComponent(randomUUID())}`)
 }

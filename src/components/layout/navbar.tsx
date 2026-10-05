@@ -59,8 +59,8 @@ export function Navbar() {
           </DropdownMenu.Root>
 
           {false && (
-            <Link href="/snes" className="text-white/70 transition-colors hover:text-primary">
-              snes
+            <Link href="/games" className="text-white/70 transition-colors hover:text-primary">
+              games
             </Link>
           )}
 
