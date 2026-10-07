@@ -8,6 +8,7 @@ const distractionLinks = [
   { label: "my photos", href: "/distractions/photos" },
   { label: "woodworking", href: "/distractions/woodworking" },
   { label: "music", href: "/distractions/music" },
+  { label: "games", href: "/games" },
 ] as const
 
 export function Navbar() {
@@ -57,12 +58,6 @@ export function Navbar() {
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
-
-          {false && (
-            <Link href="/games" className="text-white/70 transition-colors hover:text-primary">
-              games
-            </Link>
-          )}
 
         </nav>
 

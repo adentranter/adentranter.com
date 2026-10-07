@@ -1,12 +1,16 @@
-export type DistractionSlug = 'photos' | 'woodworking' | 'music'
+export type DistractionSlug = 'photos' | 'woodworking' | 'music' | 'games'
 
 export interface DistractionCategory {
   slug: DistractionSlug
   title: string
   description: string
   status: 'active' | 'coming-soon'
+  /** Overrides the default `/distractions/[slug]` link. */
+  href?: string
   coverImage?: string
   coverImagePosition?: 'top' | 'center'
+  /** Shown in the card when there is no cover image. */
+  placeholder?: string
 }
 
 export type PhotoLayout = 'default' | 'large' | 'featured-left' | 'featured-bottom'
@@ -42,6 +46,15 @@ export const distractionCategories: DistractionCategory[] = [
     title: 'music',
     description: "What I'm listening to lately — scrobbled from home, not Spotify.",
     status: 'active',
+    placeholder: '♪',
+  },
+  {
+    slug: 'games',
+    title: 'games',
+    description: 'SNES, N64, and PlayStation in the browser — keyboard, gamepad, or a phone as the controller.',
+    status: 'active',
+    href: '/games',
+    placeholder: '▶',
   },
 ]
 

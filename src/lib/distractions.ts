@@ -52,8 +52,12 @@ function applyFeaturedPicks(
     .filter((photo): photo is DistractionPhoto => photo !== null)
 }
 
+function isPhotoCategory(slug: DistractionSlug): boolean {
+  return slug === 'photos' || slug === 'woodworking'
+}
+
 async function listPhotosInCategory(slug: DistractionSlug): Promise<DistractionPhoto[]> {
-  if (slug === 'music') return []
+  if (!isPhotoCategory(slug)) return []
 
   const dir = path.join(process.cwd(), 'public', 'distractions', slug)
 
@@ -122,7 +126,7 @@ export async function getActiveCategories(): Promise<
     categories.map(async (category) => ({
       ...category,
       photoCount:
-        category.status === 'coming-soon' || category.slug === 'music'
+        category.status === 'coming-soon' || !isPhotoCategory(category.slug)
           ? 0
           : (await getPhotosByCategory(category.slug)).length,
     }))

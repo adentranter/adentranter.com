@@ -14,7 +14,7 @@ export function CategoryCard({ category, photoCount, coverImage }: CategoryCardP
 
   return (
     <Link
-      href={`/distractions/${category.slug}`}
+      href={category.href ?? `/distractions/${category.slug}`}
       className={`group block rounded-xl border border-white/10 bg-accent/5 overflow-hidden transition-colors hover:border-white/20 ${
         isComingSoon ? 'opacity-60' : ''
       }`}
@@ -32,7 +32,7 @@ export function CategoryCard({ category, photoCount, coverImage }: CategoryCardP
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/30 text-sm">
-            {isComingSoon ? 'coming soon' : category.slug === 'music' ? '♪' : 'no photos yet'}
+            {isComingSoon ? 'coming soon' : (category.placeholder ?? 'no photos yet')}
           </div>
         )}
         {isComingSoon && (
