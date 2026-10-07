@@ -8,6 +8,7 @@ import { pushUrlFor, type RetroSystemId } from '@/lib/retro/systems'
 const ANALOG_MIN_INTERVAL_MS = 50
 // 0.05 steps keep a resting thumb from sending a stream of tiny changes
 const ANALOG_STEPS = 20
+const CONTROLLER_HEARTBEAT_MS = 10_000
 
 type Options = { onReleaseAll?: () => void }
 
@@ -41,7 +42,7 @@ export function useControllerLink(system: RetroSystemId, sessionId: string, play
     if (typeof window === 'undefined') return
     if (!pushUrl) return
     let cancelled = false
-    ;(async () => {
+    const register = async () => {
       try {
         const res = await fetch(pushUrl, {
           method: 'POST',
@@ -64,8 +65,13 @@ export function useControllerLink(system: RetroSystemId, sessionId: string, play
       } catch {
         if (!cancelled) setError('Failed to reach host')
       }
-    })()
-    return () => { cancelled = true }
+    }
+    void register()
+    const heartbeat = window.setInterval(() => { void register() }, CONTROLLER_HEARTBEAT_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(heartbeat)
+    }
   }, [pushUrl])
 
   // Lock page scrolling while controller is open

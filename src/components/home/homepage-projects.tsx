@@ -9,6 +9,7 @@ import { LoopDeckMark } from "@/components/project-brands/loopdeck-mark"
 import { LaunchOsMark } from "@/components/project-brands/launchos-mark"
 import { StartupHubsMark } from "@/components/project-brands/startup-hubs-mark"
 import { ProjectBrandRow } from "@/components/home/project-brand-row"
+import { Gamepad2 } from "lucide-react"
 import {
   liveHomepageProjects,
   tinkeringHomepageProjects,
@@ -29,6 +30,14 @@ const brandMarks: Record<HomepageBrandKey, ReactNode> = {
   loopdeck: <LoopDeckMark />,
   launchos: <LaunchOsMark />,
   "startup-hubs": <StartupHubsMark />,
+  games: (
+    <div className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-white">
+      <span className="grid size-11 place-items-center rounded-xl border border-amber-300/30 bg-amber-300/10 text-amber-300">
+        <Gamepad2 className="size-6" />
+      </span>
+      couch games
+    </div>
+  ),
 }
 
 function ProjectList({ items }: Readonly<{ items: HomepageProject[] }>) {
@@ -37,7 +46,9 @@ function ProjectList({ items }: Readonly<{ items: HomepageProject[] }>) {
       {items.map(({ slug, cardClassName }) => {
         const project = projects[slug]
         const href = project.url || `/projects/${slug}`
-        const hostname = project.url ? new URL(project.url).hostname : slug
+        const hostname = project.url?.startsWith("http")
+          ? new URL(project.url).hostname
+          : project.url ?? slug
         const byline = project.byline || project.tagline || project.description
 
         return (

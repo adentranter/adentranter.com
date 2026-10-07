@@ -19,12 +19,14 @@ export function ProjectBrandRow({
   audience,
   cardClassName,
 }: Readonly<ProjectBrandRowProps>) {
+  const isExternal = href.startsWith("http://") || href.startsWith("https://")
+
   return (
     <li>
       <Link
         href={href}
-        target="_blank"
-        rel="noopener noreferrer"
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
         className={cn(
           "group grid overflow-hidden rounded-xl border transition-[border-color,transform] hover:border-white/30 md:grid-cols-2",
           cardClassName

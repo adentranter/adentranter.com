@@ -86,9 +86,14 @@ function controlsFor(zone: Zone, p: Point, g: Layout, fixed?: string): string[] 
   return fixed ? [fixed] : []
 }
 
-export default function SnesController({ sessionId, playerId }: Props) {
+// The DS has the same buttons and layout as a SNES pad
+export function NdsController(props: Props) {
+  return <SnesController {...props} system="nds" />
+}
+
+export default function SnesController({ sessionId, playerId, system = 'snes' }: Props & { system?: 'snes' | 'nds' }) {
   const pointersRef = useRef(new Map<number, { zone: Zone; fixed?: string; controls: string[]; buzzOnRelease: boolean }>())
-  const link = useControllerLink('snes', sessionId, playerId, { onReleaseAll: () => pointersRef.current.clear() })
+  const link = useControllerLink(system, sessionId, playerId, { onReleaseAll: () => pointersRef.current.clear() })
   const { surfaceRef, size, pressed, hold, release, syncPressed } = link
 
   const layout = size.w > 0 ? layoutFor(size.w, size.h) : null

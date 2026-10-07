@@ -24,6 +24,7 @@ export type HomepageBrandKey =
   | 'legal-lookup'
   | 'founder-agreements'
   | 'mail-your-mp'
+  | 'games'
   | 'twcg'
   | 'twine-track'
   | 'loopdeck'
@@ -180,6 +181,22 @@ export const projects: Record<string, ProjectMeta> = {
     status: 'Production',
     indexable: false,
   },
+  games: {
+    slug: 'games',
+    title: 'Couch Games',
+    description: 'Retro console games in the browser, with phones as wireless controllers.',
+    blurb:
+      'A browser-based retro console experiment: pick a game on the big screen, scan a QR code, and use one or two phones as wireless controllers.',
+    url: '/games',
+    techStack: 'Next.js, React, EmulatorJS, Pusher',
+    featured: true,
+    tagline: 'The browser is the console.',
+    byline: 'Retro games in the browser, with phones as controllers.',
+    audience: 'Friends on a couch with a laptop, a screen, and one or two phones ready to become controllers.',
+    projectType: 'Experiment',
+    status: 'Experiment',
+    indexable: false,
+  },
   twcg: {
     slug: 'twcg',
     title: 'TWCG',
@@ -267,6 +284,11 @@ export const liveHomepageProjects: HomepageProject[] = [
 
 /** Prelaunch — currently tinkering, not ready for real users yet. */
 export const tinkeringHomepageProjects: HomepageProject[] = [
+  {
+    slug: 'games',
+    cardClassName:
+      'border-[#f59e0b]/35 bg-gradient-to-br from-[#2a1d0a] via-[#18140d] to-[#0d1720]',
+  },
   {
     slug: 'launchos',
     cardClassName:
